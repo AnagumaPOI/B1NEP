@@ -1,0 +1,507 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B1NEP Builder Trial</title>
+<link rel="stylesheet" href="../css/builder.css">
+<link rel="stylesheet" href="../css/b1nep-modern.css">
+</head>
+<body class="b1-builder-page">
+<div class="b1-shell">
+<header class="b1-topbar">
+  <div class="b1-brand"><img class="b1-logo-img" src="../LOGO.png" alt="B1NEP logo"><span>B1NEP</span></div>
+  <nav class="b1-nav" aria-label="Builder sections">
+    <button type="button" class="b1-builder-tab active" data-target="paneProject">Project</button>
+    <button type="button" class="b1-builder-tab" data-target="paneSite">Site</button>
+    <button type="button" class="b1-builder-tab" data-target="paneStages">Stages</button>
+    <button type="button" class="b1-builder-tab" id="trialAnalysisTab" data-target="paneAnalysis" title="Stability analysis panel">Stability</button>
+    <button type="button" class="b1-builder-tab" id="trialFEMTab" data-target="paneFEM" title="Run FEM analysis">FEM</button>
+  </nav>
+  <div class="b1-actions">
+    <button class="b1-icon-button b1-transfer-button b1-import-button" id="btnLoad" title="Import .rio" aria-label="Import .rio">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 4v12"></path>
+        <path d="M7 11l5 5 5-5"></path>
+        <path d="M5 14v4c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-4"></path>
+      </svg>
+    </button>
+    <button class="b1-icon-button b1-transfer-button b1-export-button" id="btnExport" title="Export .rio" aria-label="Export .rio">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 16V4"></path>
+        <path d="M7 9l5-5 5 5"></path>
+        <path d="M5 14v4c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-4"></path>
+      </svg>
+    </button>
+    <button class="b1-action-button b1-action-primary" id="btnCalcBook" type="button" title="Export reports">Export Reports</button>
+  </div>
+</header>
+<div class="b1-report-modal" id="reportModal" aria-hidden="true">
+  <div class="b1-report-card">
+    <div class="b1-report-head">
+      <h2>Export Reports</h2>
+      <button class="tiny" id="btnReportClose" type="button">×</button>
+    </div>
+    <label class="b1-report-language">
+      <span>Language</span>
+      <select id="reportLanguage">
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+      </select>
+    </label>
+    <div class="b1-report-row">
+      <span class="b1-report-light" id="reportLightInput"></span>
+      <div><b>Input Summary</b><small>Always exported from current input.</small></div>
+    </div>
+    <div class="b1-report-row">
+      <span class="b1-report-light" id="reportLightStable"></span>
+      <div><b>Stability Analysis</b><small id="reportStableHint">Not current.</small></div>
+    </div>
+    <div class="b1-report-row">
+      <span class="b1-report-light" id="reportLightFem"></span>
+      <div><b>FEM / RIDO Output + Checks</b><small id="reportFemHint">Not current.</small></div>
+    </div>
+    <div class="b1-report-actions">
+      <button class="b1-action-button" id="btnReportCancel" type="button">Cancel</button>
+      <button class="b1-action-button b1-action-primary" id="btnReportExport" type="button">Export current reports</button>
+    </div>
+  </div>
+</div>
+<main class="b1-layout b1-builder-layout">
+
+<!-- ====== BUILDER PANEL ====== -->
+<div id="builder">
+
+  <!-- Single sticky header: button toolbar ??stage-status line ??tabs.
+       Stacked vertically, anchored at the top of the scrolling pane so
+       action blocks slide under all three together. -->
+  <div id="builderHeader">
+    <div class="toolbar">
+      <input id="loadFileInput" type="file" accept=".rio" style="display:none">
+    </div>
+    <div class="b1-preview-row">
+      <button id="btnPreview" class="b1-preview-button" type="button" title="Preview initial stage">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"></path>
+          <circle cx="12" cy="12" r="2.7"></circle>
+        </svg>
+        <span>Preview</span>
+      </button>
+    </div>
+    <div id="stageStatus">
+      <button id="btnPrev" class="tiny">◀</button>
+      <span id="stageStatusText">  Stage: -  </span>
+      <button id="btnNext" class="tiny">▶</button>
+    </div>
+  </div>
+
+  <!-- Project pane: case name + analyze options. -->
+  <div class="tab-pane active" id="paneProject">
+    <h2>Case Info</h2>
+    <div class="block">
+      <div class="row">
+        <label>Case name</label>
+        <input id="case_name" type="text" value="" placeholder="e.g. TypeA"
+               style="width:240px;">
+      </div>
+    </div>
+    <h2>Geometry</h2>
+    <div class="block">
+      <div class="row">
+        <label>L (m)</label> <input id="geom_L" type="text" value="10">
+        <label>W (m)</label> <input id="geom_W" type="text" value="10">
+      </div>
+    </div>
+    <h2>Quick Build</h2>
+    <div class="block">
+      <div class="row" style="gap:8px;">
+        <button class="add" id="trialQuickWall" type="button" onclick="return window.openB1QuickBuild && window.openB1QuickBuild('wall', event)">Simple Wall Builder</button>
+        <button class="add" id="trialQuickSoil" type="button" onclick="return window.openB1QuickBuild && window.openB1QuickBuild('soil', event)">Simple Soil Builder</button>
+        <button class="add" id="trialQuickStage" type="button" onclick="return window.openB1QuickBuild && window.openB1QuickBuild('stage', event)">Simple Stage Builder</button>
+        <button class="add" id="trialQuickWat" type="button" onclick="return window.openB1QuickBuild && window.openB1QuickBuild('wat', event)">Simple WAT Builder</button>
+      </div>
+      <div class="row" style="margin-top:4px;">
+        <span class="hint" style="font-size:11px;color:#666;">
+          Simple Wall Builder: pick a wall type and section → auto-fills Site pane's wall sections.
+        </span>
+        <span class="hint" style="font-size:11px;color:#666;">
+          Simple Soil Builder: enter soil layers by soil type and analysis method → auto-fills Site pane's layers.
+        </span>
+        <span class="hint" style="font-size:11px;color:#666;">
+          Simple Stage Builder: generate excavation stages from final depth + supports.
+        </span>
+        <span class="hint" style="font-size:11px;color:#666;">
+          Simple WAT Builder: generate stage WAT commands from water level and draining conditions.
+        </span>
+      </div>
+    </div>
+    <h2>Analyze options</h2>
+    <div class="block">
+      <div class="row">
+        <label>Analyze direction:</label>
+        <label style="margin-right:10px;">
+          <input type="radio" name="geom_dir" value="L" checked> L
+        </label>
+        <label style="margin-right:10px;">
+          <input type="radio" name="geom_dir" value="W"> W
+        </label>
+        <label style="margin-right:10px;">
+          <input type="radio" name="geom_dir" value="LW"> L&W
+        </label>
+      </div>
+      <div class="row" style="margin-top:2px;">
+        <span class="hint" style="font-size:11px;color:#666;">
+          Struts span perpendicular: when L is analyzed strut length = W, when W is analyzed strut length = L.
+        </span>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <label><input id="opt_A" type="checkbox"> *A* additive Boussinesq SUB</label>
+      </div>
+      <div class="row">
+        <label><input id="opt_F" type="checkbox"> *F* 2nd-order / buckling-aware</label>
+      </div>
+      <div class="row b1-option-inline">
+        <label><input id="opt_CW" type="checkbox"> *CW* wall adhesion ratio cw/c</label>
+        <input id="opt_cw_ratio" class="fraction-input" type="text" value="2/3" disabled>
+        <span class="hint">default 2/3; exported to FEM soil cohesion option when enabled.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Site pane: wall sections + element size / water table + soil layers. -->
+  <div class="tab-pane" id="paneSite">
+    <h2>Wall sections (top to bottom)</h2>
+    <div id="wallSections"></div>
+    <button class="add" onclick="addWallSection()">+ Section</button>
+    <h2>Element Size & Water Table</h2>
+    <div class="block">
+      <div class="row">
+        <label>Max Le (m)</label> <input id="wall_le" type="text" value="0.5">
+        <label>Water z (m)</label> <input id="wall_w" type="text" value="1.0">
+      </div>
+    </div>
+    <h2>Soil types (top to bottom)</h2>
+    <div id="layers"></div>
+    <button class="add" onclick="addLayer()">+ Layer</button>
+  </div>
+
+  <!-- Stages pane -->
+  <div class="tab-pane" id="paneStages">
+    <div class="row" style="justify-content:flex-end; align-items:center; margin: 8px 0 10px;">
+      <div class="seg-toggle" aria-label="Stage target direction">
+        <button id="btnStageForL" type="button">For L</button>
+        <button id="btnStageForW" type="button">For W</button>
+      </div>
+    </div>
+    <div class="row" style="justify-content:space-between; align-items:center; margin: 8px 0 6px;">
+      <h2 style="margin:0;">Stages</h2>
+    </div>
+    <div id="stages"></div>
+    <div class="stage-pane-actions">
+      <button class="add" onclick="addStage()">+ Stage</button>
+    </div>
+  </div>
+
+  <!-- Analysis pane: embedded goStable view in the same builder window. -->
+  <div class="tab-pane" id="paneAnalysis">
+    <iframe id="stablePanelFrame" title="Stability analysis panel" src="stable.html?embedded=1"></iframe>
+  </div>
+
+  <!-- FEM pane: embedded results view in the same builder window. -->
+  <div class="tab-pane" id="paneFEM">
+    <div id="femPanelStatus" class="hint">Click FEM to run the analysis.</div>
+    <iframe id="femPanelFrame" title="FEM results panel" src="results.html?embedded=1"></iframe>
+  </div>
+
+</div>
+
+<!-- ====== 3D VIEWER + 2D PROFILE ====== -->
+<div id="viewer">
+  <div id="viewer3D">
+    <div id="topControls">
+      <div id="stageInfo">Stage: -</div>
+      <div class="topButtons">
+        <button id="toggleSoil">Soil</button>
+        <button id="toggleWall">Wall</button>
+      </div>
+    </div>
+  </div>
+  <div id="profile2D">
+    <svg id="profileSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+</div>
+</main>
+</div>
+
+<script src="../js/Builder/three_min.js"></script>
+<script src="../js/Builder/OrbitControls_legacy.js"></script>
+<!-- Builder modules (plain scripts, attach to window).
+     Order matters only for `installProfile2D` which is called from the
+     inline script below once `model` / `currentStageIdx` exist. -->
+<script src="../js/strut_types.js"></script>
+<script src="../js/action_defs.js"></script>
+<script src="../js/Builder/profile2d.js"></script>
+<script src="../js/Builder/wat_report_graph.js"></script>
+<script src="../js/Builder/simple_stage_maker.js"></script>
+<script src="../js/Builder/simple_wat_designer.js"></script>
+<script src="../js/Builder/simple_wall_builder.js"></script>
+<script src="../js/Builder/simple_soil_input.js"></script>
+<script src="../js/Builder/builder_project_panel.js"></script>
+<script src="../js/Builder/builder_site_panel.js"></script>
+<script src="../js/Builder/builder_stages_panel.js"></script>
+<script src="../js/Builder/builder_io_panels.js"></script>
+<script src="../js/Builder/builder_analysis_panels.js"></script>
+<!-- Three.js scene: owns the viewer3D mount and exposes window.setExcavation /
+     addStrutsAt / removeStrutSet / setWallHeight / resetModel / etc. -->
+<script src="../js/Builder/viewer3d.js"></script>
+<!-- Block builder + .rio import/export + Go FEM driver.  Drives the viewer
+     through the window.* APIs exported by viewer3d.js. -->
+<script src="../js/Builder/builder_main.js"></script>
+<script>
+  (function installB1QuickBuildBridge() {
+    const configs = {
+      wall: {
+        label: 'Simple Wall Builder',
+        fnName: 'openSimpleWallBuilder',
+        modalId: 'simpleWallBuilderModal',
+        scripts: ['../js/Builder/simple_wall_builder.js'],
+        boot: 'const h = window.installSimpleWallBuilder({ model: api.model, rerenderWallSections: function() { api.rerenderWallSections(); api.refreshProfile(); } }); h.openModal();'
+      },
+      soil: {
+        label: 'Simple Soil Input',
+        fnName: 'openSimpleSoilInput',
+        modalId: 'simpleSoilBuiderModal',
+        scripts: ['../js/Builder/simple_soil_input.js'],
+        boot: 'const h = window.installSimpleSoilInput({ model: api.model, rerenderLayers: function() { api.rerenderLayers(); api.refreshProfile(); } }); h.openModal();'
+      },
+      stage: {
+        label: 'Simple Stage Builder',
+        fnName: 'openSimpleStageMaker',
+        modalId: 'simpleStageMakerModal',
+        scripts: ['../js/Builder/simple_stage_maker.js'],
+        boot: 'window.installSimpleStageMaker({ model: api.model, rerenderStages: api.rerenderStages, wallTotalLength: api.wallTotalLength, getStrutLength: api.getStrutLength, kFromStrutType: api.kFromStrutType, strutTypes: api.strutTypes }); window.openSimpleStageMaker();'
+      },
+      wat: {
+        label: 'Simple WAT Designer',
+        fnName: 'openSimpleWatDesigner',
+        modalId: 'simpleWatDesignerModal',
+        scripts: ['../js/Builder/simple_wat_designer.js'],
+        boot: 'const h = window.installSimpleWatDesigner({ model: api.model, rerenderStages: api.rerenderStages, refreshProfile: api.refreshProfile, wallTotalLength: api.wallTotalLength, getPyBridge: api.getPyBridge, setSiteWaterLevel: api.setSiteWaterLevel }); h.openModal();'
+      }
+    };
+
+    function isModalVisible(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return false;
+      const style = window.getComputedStyle(modal);
+      return modal.classList.contains('show') && style.display !== 'none' && style.visibility !== 'hidden';
+    }
+
+    function isQtWebEngine() {
+      return /QtWebEngine/i.test(navigator.userAgent || '');
+    }
+
+    function popupHtml(kind) {
+      const cfg = configs[kind];
+      const cardWidths = {
+        wall: '760px',
+        soil: '1240px',
+        stage: '1120px',
+        wat: '960px'
+      };
+      const scripts = cfg.scripts
+        .map(src => '<script src="' + src + '"><\/script>')
+        .join('');
+      const boot = `
+        <script>
+          let b1FitTimer = null;
+          function fitPopupToCard() {
+            const card = document.querySelector('.modal-card');
+            if (!card) return;
+            const width = Math.ceil(Math.min(screen.availWidth - 80, Math.max(520, card.scrollWidth + 52)));
+            const height = Math.ceil(Math.min(screen.availHeight - 80, Math.max(240, card.scrollHeight + 52)));
+            try {
+              window.resizeTo(width, height);
+              window.moveTo(Math.max(0, (screen.availWidth - width) / 2), Math.max(0, (screen.availHeight - height) / 2));
+            } catch (err) {}
+          }
+          function schedulePopupFit() {
+            window.clearTimeout(b1FitTimer);
+            b1FitTimer = window.setTimeout(fitPopupToCard, 30);
+          }
+          function closeWhenModalHides(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal || !window.MutationObserver) return;
+            function hidden() {
+              const style = window.getComputedStyle(modal);
+              return modal.getAttribute('aria-hidden') === 'true' ||
+                style.display === 'none' ||
+                !modal.classList.contains('show');
+            }
+            const observer = new MutationObserver(function() {
+              if (hidden()) {
+                observer.disconnect();
+                window.setTimeout(function() { window.close(); }, 30);
+              }
+            });
+            observer.observe(modal, { attributes: true, attributeFilter: ['class', 'style', 'aria-hidden'] });
+          }
+          window.addEventListener('load', function() {
+            const api = window.opener && window.opener.B1BuilderAPI;
+            const host = document.getElementById('popupStatus');
+            if (!api) {
+              host.textContent = 'Cannot reach the live builder model. Please reopen this popup from the builder page.';
+              return;
+            }
+            try {
+              ${cfg.boot}
+              closeWhenModalHides('${cfg.modalId}');
+              schedulePopupFit();
+              window.setTimeout(schedulePopupFit, 120);
+              if (window.ResizeObserver) {
+                const card = document.querySelector('.modal-card');
+                if (card) new ResizeObserver(schedulePopupFit).observe(card);
+              }
+              if (window.MutationObserver) {
+                new MutationObserver(schedulePopupFit).observe(document.body, { childList: true, subtree: true, attributes: true });
+              }
+              host.textContent = 'Connected to the live builder model.';
+            } catch (err) {
+              host.textContent = 'Quick Build popup failed: ' + (err && err.message ? err.message : err);
+            }
+          });
+        <\/script>`;
+      return `<!doctype html>
+        <html lang="zh-Hant">
+        <head>
+          <meta charset="utf-8">
+          <base href="${document.baseURI}">
+          <title>${cfg.label}</title>
+          <link rel="stylesheet" href="../css/builder.css">
+          <style>
+            body {
+              display: block;
+              margin: 0;
+              min-height: 0;
+              overflow-x: hidden;
+              overflow-y: auto;
+              background: rgba(245, 247, 250, .98);
+              font-family: "Segoe UI", Arial, sans-serif;
+            }
+            #popupStatus {
+              position: fixed;
+              left: 12px;
+              right: 12px;
+              bottom: 10px;
+              z-index: 1;
+              color: #4f5965;
+              font-size: 11px;
+            }
+            .modal-backdrop {
+              position: static !important;
+              display: flex !important;
+              min-height: 0;
+              padding: 24px;
+              align-items: center !important;
+              justify-content: center !important;
+              background: #f5f7fa !important;
+              box-sizing: border-box;
+            }
+            .modal-card {
+              width: ${cardWidths[kind] || '1040px'} !important;
+              min-width: ${cardWidths[kind] || '1040px'} !important;
+              max-width: none !important;
+              box-sizing: border-box;
+              margin: 0 auto;
+              max-height: calc(100vh - 56px) !important;
+              overflow-x: hidden !important;
+              overflow-y: auto !important;
+              border-color: #d8c2b3;
+              box-shadow: 0 10px 26px rgba(106, 62, 12, .13);
+            }
+            .maker-supports {
+              overflow-x: hidden;
+              overflow-y: visible;
+            }
+            input[type="text"],
+            select {
+              min-width: 64px;
+            }
+          </style>
+          ${scripts}
+          ${boot}
+        </head>
+        <body>
+          <div id="popupStatus">Loading ${cfg.label}...</div>
+        </body>
+        </html>`;
+    }
+
+    function openPopup(kind) {
+      const cfg = configs[kind];
+      const sizes = {
+        wall: 'width=820,height=440',
+        soil: 'width=1280,height=430',
+        stage: 'width=1160,height=620',
+        wat: 'width=980,height=520'
+      };
+      const popup = window.open('', 'b1nep-quick-build-' + kind, (sizes[kind] || 'width=980,height=720') + ',resizable=yes,scrollbars=yes');
+      if (!popup || !popup.document) {
+        window.alert('Cannot open ' + cfg.label + ' popup.');
+        return false;
+      }
+      popup.document.open();
+      popup.document.write(popupHtml(kind));
+      popup.document.close();
+      return true;
+    }
+
+    window.openB1QuickBuild = function(kind, event) {
+      const cfg = configs[kind];
+      if (!cfg) return false;
+      if (event) {
+        if (event.__b1QuickBuildHandled) return false;
+        event.__b1QuickBuildHandled = true;
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      if (isQtWebEngine()) {
+        openPopup(kind);
+        return false;
+      }
+
+      const fn = window[cfg.fnName];
+      if (typeof fn !== 'function') {
+        openPopup(kind);
+        return false;
+      }
+
+      try {
+        fn();
+      } catch (err) {
+        openPopup(kind);
+        return false;
+      }
+
+      window.setTimeout(function() {
+        if (!isModalVisible(cfg.modalId)) openPopup(kind);
+      }, 80);
+      return false;
+    };
+
+    [
+      ['trialQuickWall', 'wall'],
+      ['trialQuickSoil', 'soil'],
+      ['trialQuickStage', 'stage'],
+      ['trialQuickWat', 'wat']
+    ].forEach(([id, kind]) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener('click', event => window.openB1QuickBuild(kind, event));
+    });
+  }());
+
+</script>
+</body>
+</html>

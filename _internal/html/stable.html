@@ -1,0 +1,560 @@
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B1NEP goStable Trial</title>
+<style>
+  html, body { margin: 0; min-height: 100%; font-family: system-ui, -apple-system, sans-serif; background: linear-gradient(180deg, #eef3f8 0%, #f7f8fb 100%); color: #10203a; }
+  body { padding: 14px; box-sizing: border-box; }
+  h1 { font-size: 20px; margin: 0 0 10px; }
+  h2 { font-size: 14px; margin: 12px 0 6px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+  .panel { background: #fff; border: 1px solid #c7d1df; border-radius: 10px; padding: 12px; box-shadow: 0 8px 18px rgba(16,32,58,0.05); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+  label { font-size: 12px; color: #445; }
+  input { width: 76px; padding: 4px 6px; box-sizing: border-box; border: 1px solid #b9c7d8; border-radius: 5px; font-size: 12px; background: #fbfcfe; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { border: 1px solid #c7d1df; padding: 4px 6px; text-align: right; vertical-align: middle; }
+  th { background: #e7ebf3; font-weight: 600; }
+  td:first-child, th:first-child, td:nth-child(2), th:nth-child(2), td:nth-child(3), th:nth-child(3) { text-align: left; }
+  td input { width: 100%; }
+  button { font-size: 12px; padding: 5px 10px; border: 1px solid #9aa7b8; border-radius: 6px; background: #f7f9fc; cursor: pointer; }
+  button.primary { background: #ffcc52; border-color: #b98a00; font-weight: 700; }
+  button.tiny { padding: 2px 7px; }
+  .status { margin-left: 8px; font-size: 12px; }
+  .status.ok { color: #067a31; }
+  .status.ng { color: #b00020; }
+  .check-table td, .check-table th { text-align: right; }
+  .check-table td:first-child, .check-table th:first-child { text-align: left; }
+  .compact-check { table-layout: fixed; }
+  .compact-check col.col-item { width: 25%; }
+  .compact-check col.col-design { width: 25%; }
+  .compact-check col.col-allow { width: 25%; }
+  .compact-check col.col-result { width: 25%; }
+  .diagram-box { display: flex; justify-content: center; align-items: center; min-height: 220px; background: radial-gradient(circle at top, #f9fbfe, #edf2f8); border: 1px solid #d5dde9; border-radius: 10px; padding: 10px; }
+  .diagram-box img { max-width: 100%; max-height: 240px; display: block; object-fit: contain; }
+  .pill { display: inline-block; min-width: 64px; text-align: center; border-radius: 999px; padding: 2px 12px; font-weight: 700; }
+  .pill.ok { background: #e6f6ea; color: #00742b; border: 1px solid #7bc795; }
+  .pill.ng { background: #fde7e7; color: #b00020; border: 1px solid #e69a9a; }
+  .hint { font-size: 11px; color: #667; margin-top: 5px; }
+  .wide { grid-column: 1 / -1; }
+  .top-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 10px; align-items: start; }
+  .input-table th, .input-table td { text-align: left; }
+  .input-table input { width: 100%; }
+  .tabbar { display: flex; gap: 6px; margin: 10px 0 14px; position: sticky; top: 0; z-index: 2; background: #fff; padding-bottom: 6px; }
+  .tabbar button { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .tabbar button.active { background: #ffd05c; border-color: #b98a00; font-weight: 700; }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+  .page-title { display: flex; align-items: end; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .subtitle { font-size: 12px; color: #5f6f86; }
+  .overview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .overview-card { background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%); border: 1px solid #d6deea; border-radius: 10px; padding: 10px 12px; box-shadow: 0 8px 18px rgba(16,32,58,0.04); }
+  .overview-card.ok { border-color: #8ac9a1; background: linear-gradient(180deg, #ffffff 0%, #f2fbf5 100%); }
+  .overview-card.ng { border-color: #e2a0a0; background: linear-gradient(180deg, #ffffff 0%, #fff4f4 100%); }
+  .overview-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .overview-head strong { font-size: 13px; color: #29405f; }
+  .overview-status { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #eef3f8; color: #39516f; }
+  .overview-card.ok .overview-status { background: #e6f6ea; color: #00742b; }
+  .overview-card.ng .overview-status { background: #fde7e7; color: #b00020; }
+  .overview-main { font-size: 22px; font-weight: 800; line-height: 1.15; margin-bottom: 4px; }
+  .overview-sub { font-size: 12px; color: #5f6f86; line-height: 1.35; }
+  .overview-metric { margin-top: 6px; font-size: 11px; color: #4f6178; }
+  .formula-line { font-family: "Cambria Math", "Times New Roman", serif; letter-spacing: 0.1px; }
+  .result-panel { border: 1px solid #d6deea; border-radius: 10px; padding: 10px; background: linear-gradient(180deg, #fff, #fafbfd); }
+  .section-note { margin: 6px 0 10px; font-size: 12px; color: #5f6f86; }
+  .long-table-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #eef3f8; color: #39516f; font-size: 11px; font-weight: 700; }
+  .aligned-table { table-layout: fixed; }
+  .aligned-table th, .aligned-table td { overflow-wrap: anywhere; }
+  .uplift-case-table { table-layout: fixed; }
+  .uplift-case-table th, .uplift-case-table td { white-space: nowrap; }
+</style>
+<link rel="stylesheet" href="../css/b1nep-modern.css">
+</head>
+<body class="b1-stable-page">
+<div class="b1-shell">
+  <header class="b1-topbar">
+    <div class="b1-brand"><img class="b1-logo-img" src="../LOGO.png" alt="B1NEP logo"><span>B1NEP</span></div>
+    <nav class="b1-nav" aria-label="Stability sections">
+      <a href="./builder.html">Project</a>
+      <a href="./builder.html">Site</a>
+      <a href="./builder.html">Stages</a>
+      <button type="button" class="active">Analysis</button>
+    </nav>
+    <div class="b1-actions">
+      <span class="b1-status-pill">Stability Check</span>
+      <button class="b1-action-button b1-action-primary" type="button">Go FEM</button>
+      <button class="b1-icon-button" title="Download">↓</button>
+      <button class="b1-icon-button" title="Upload">↑</button>
+      <button class="b1-icon-button" title="Settings">⚙</button>
+    </div>
+  </header>
+  <div class="b1-layout">
+    <aside class="b1-sidebar" aria-label="Stability navigation">
+      <button class="b1-side-button active" data-stable-target="overview"><strong>PA</strong><span>Overview</span></button>
+      <button class="b1-side-button" data-stable-target="input"><strong>≋</strong><span>Input</span></button>
+      <button class="b1-side-button" data-stable-tab="tabLateral"><strong>L</strong><span>Lateral</span></button>
+      <button class="b1-side-button" data-stable-tab="tabBasal"><strong>B</strong><span>Basal</span></button>
+      <button class="b1-side-button" data-stable-tab="tabSand"><strong>S</strong><span>Sand</span></button>
+      <button class="b1-side-button" data-stable-tab="tabUplift"><strong>U</strong><span>Uplift</span></button>
+    </aside>
+    <main class="b1-main">
+  <div class="page-title" id="stableOverview">
+    <div>
+      <h1>goStable - Stability Checks</h1>
+      <div class="subtitle">Read the four summary cards first, then open the detailed tables only when you need to trace a value.</div>
+    </div>
+  </div>
+
+  <div class="overview-grid">
+    <div id="cardLateral" class="overview-card">
+      <div class="overview-head">
+        <strong>Lateral</strong>
+        <span id="cardLateralStatus" class="overview-status">-</span>
+      </div>
+      <div class="overview-main">FpLp &ge; FaLa</div>
+      <div class="overview-sub">
+        <div>FpLp = <span id="cardPassiveMoment">-</span></div>
+        <div>FaLa = <span id="cardActiveMoment">-</span></div>
+      </div>
+      <div class="overview-sub formula-line">with c&prime;/FS. &phi;&prime;/FS</div>
+    </div>
+    <div id="cardBasal" class="overview-card">
+      <div class="overview-head">
+        <strong>Basal Heave</strong>
+        <span id="cardBasalStatus" class="overview-status">-</span>
+      </div>
+      <div class="overview-main" id="cardBasalMain">FS = -</div>
+      <div class="overview-sub formula-line">F<sub>S</sub> = X&Sigma;(&Delta;L&tau;<sub>f</sub>) / (W&middot;X/2)</div>
+    </div>
+    <div id="cardSand" class="overview-card">
+      <div class="overview-head">
+        <strong>Sand Boiling</strong>
+        <span id="cardSandStatus" class="overview-status">-</span>
+      </div>
+      <div class="overview-main" id="cardSandMain">FS<sub>1</sub> = -</div>
+      <div class="overview-sub formula-line">F<sub>S1</sub> = 2&gamma;&prime;D / (&gamma;<sub>w</sub>&Delta;H<sub>w</sub>)</div>
+      <div class="overview-main" id="cardSandSub">F<sub>S2</sub> = -</div>
+      <div class="overview-sub formula-line">F<sub>S2</sub> = &gamma;&prime;(&Delta;H<sub>w</sub> + 2D) / (&gamma;<sub>w</sub>&Delta;H<sub>w</sub>)</div>
+    </div>
+    <div id="cardUplift" class="overview-card">
+      <div class="overview-head">
+        <strong>Hydraulic Uplift</strong>
+        <span id="cardUpliftStatus" class="overview-status">-</span>
+      </div>
+      <div class="overview-main" id="cardUpliftMain">FS = -</div>
+      <div class="overview-sub formula-line">F<sub>S</sub> = Weight / U<sub>w</sub></div>
+    </div>
+  </div>
+
+  <div class="top-grid" id="stableInputs">
+    <div class="panel">
+      <h2>Global inputs</h2>
+      <table class="input-table">
+        <tbody>
+          <tr>
+            <td>Excavation depth (m)</td><td><input id="excavationDepth" type="text"></td>
+            <td>Wall toe depth (m)</td><td><input id="wallDepth" type="text"></td>
+          </tr>
+          <tr>
+            <td>Lowest support depth (m)</td><td><input id="supportDepth" type="text"></td>
+            <td>Excavation width B (m)</td><td><input id="excavationWidth" type="text" value="10.00"></td>
+          </tr>
+          <tr>
+            <td>Retained-side water level (m)</td><td><input id="waterOutside" type="text"></td>
+            <td>Excavation-side water level (m)</td><td><input id="waterInside" type="text"></td>
+          </tr>
+          <tr>
+            <td>Surcharge q (tf/m2)</td><td><input id="globalSurcharge" type="text" value="0.00"></td>
+            <td></td><td></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="hint">Water source: <span id="waterSource">-</span>. Each side uses the last WAT command found up to the deepest excavation stage; missing sides use defaults.</div>
+      <div style="margin-top:8px;">
+        <button id="recalc" class="primary">Recalculate</button>
+        <span id="status" class="status"></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>FS factors</h2>
+      <table class="input-table">
+        <tbody>
+          <tr><td>Lateral c&prime;/&phi;&prime; FS</td><td><input id="fsLateral" type="text" value="1.20"></td></tr>
+          <tr><td>Basal Heave FS</td><td><input id="fsBasal" type="text" value="1.20"></td></tr>
+          <tr><td>Sand Boiling FS1</td><td><input id="fsSand1" type="text" value="1.50"></td></tr>
+          <tr><td>Sand Boiling FS2</td><td><input id="fsSand2" type="text" value="2.00"></td></tr>
+          <tr><td>Hydraulic Uplift FS</td><td><input id="fsUplift" type="text" value="1.20"></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel wide" id="stableChecks">
+      <h2>Soil Types</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Soil type</th>
+            <th>z bottom</th>
+            <th>&gamma;<sub>t</sub></th>
+            <th>&gamma;<sub>sub</sub></th>
+            <th>c&prime;</th>
+            <th>&phi;&prime;</th>
+            <th>Su</th>
+            <th>Ka</th>
+            <th>Kp</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="layerBody"></tbody>
+      </table>
+      <div style="margin-top:6px;"><button id="addLayer">+ Layer</button></div>
+    </div>
+
+    <div class="panel wide">
+      <div class="tabbar">
+        <button class="stable-tab active" data-target="tabLateral">Lateral</button>
+        <button class="stable-tab" data-target="tabBasal">Basal Heave</button>
+        <button class="stable-tab" data-target="tabSand">Sand Boiling</button>
+        <button class="stable-tab" data-target="tabUplift">Hydraulic Uplift</button>
+      </div>
+
+      <div id="tabLateral" class="tab-pane active">
+      <h2>Lateral Earth Pressure Equilibrium</h2>
+      <div class="section-note">The result block and sketch stay above; the pressure rows below are for tracing where the moment balance comes from.</div>
+      <div class="grid">
+        <div class="result-panel">
+      <table class="check-table compact-check">
+        <colgroup>
+          <col class="col-item"><col class="col-design"><col class="col-allow"><col class="col-result">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Check Item</th>
+            <th>F</th>
+            <th>L</th>
+            <th>F*L</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Active(retained side earth pressure)</td>
+            <td><span id="activeForce">-</span> tf/m</td>
+            <td><span id="activeArm">-</span> m</td>
+            <td><span id="activeMoment">-</span> tf-m/m</td>
+          </tr>
+          <tr>
+            <td>Passive(excavation side earth pressure)</td>
+            <td><span id="passiveForce">-</span> tf/m</td>
+            <td><span id="passiveArm">-</span> m</td>
+            <td><span id="passiveMoment">-</span> tf-m/m</td>
+          </tr>
+          <tr>
+            <td>Water pressure contribution</td>
+            <td><span id="waterForce">-</span> tf/m</td>
+            <td><span id="waterArm">-</span> m</td>
+            <td><span id="waterMoment">-</span> tf-m/m</td>
+          </tr>
+          <tr>
+            <td>Moment Equilibrium</td>
+            <td colspan="2">Fp*Lp = <span id="passiveCheckMoment">-</span> &ge; Fa*La = <span id="activeCheckMoment">-</span> tf-m/m</td>
+            <td><span id="resultValue" class="pill">-</span></td>
+          </tr>
+        </tbody>
+      </table>
+        </div>
+        <div class="diagram-box">
+          <img src="../img/LateralEarthPressureCheck.png" alt="Lateral earth pressure equilibrium diagram">
+        </div>
+      </div>
+      <div class="long-table-title"><h2>Active Side Earth Pressure</h2><span class="badge">Detail Table</span></div>
+      <table class="aligned-table">
+        <colgroup>
+          <col style="width:7%"><col style="width:12%"><col style="width:12%"><col style="width:7%">
+          <col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:9%">
+          <col style="width:9%"><col style="width:9%"><col style="width:8%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Layer</th><th>z range</th><th>Soil type</th><th>K<sub>a</sub></th><th>&sigma;<sub>v</sub> bot</th><th>u bot</th><th>&sigma;<sub>a</sub> top</th><th>&sigma;<sub>a</sub> bot</th><th>Force</th><th>Arm</th><th>Moment</th>
+          </tr>
+        </thead>
+        <tbody id="activeBody"></tbody>
+      </table>
+      <div class="long-table-title"><h2>Passive Side Earth Pressure</h2><span class="badge">Detail Table</span></div>
+      <table class="aligned-table">
+        <colgroup>
+          <col style="width:7%"><col style="width:12%"><col style="width:12%"><col style="width:7%">
+          <col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:9%">
+          <col style="width:9%"><col style="width:9%"><col style="width:8%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Layer</th><th>z range</th><th>Soil type</th><th>K<sub>p</sub></th><th>&sigma;<sub>v</sub> bot</th><th>u bot</th><th>&sigma;<sub>p</sub> top</th><th>&sigma;<sub>p</sub> bot</th><th>Force</th><th>Arm</th><th>Moment</th>
+          </tr>
+        </thead>
+        <tbody id="passiveBody"></tbody>
+      </table>
+      <div class="long-table-title"><h2>Water Pressure Contribution</h2><span class="badge">Detail Table</span></div>
+      <table class="aligned-table">
+        <thead>
+          <tr>
+            <th>Side</th><th>z range</th><th>U<sub>ret</sub> top</th><th>U<sub>ret</sub> bot</th><th>U<sub>exc</sub> top</th><th>U<sub>exc</sub> bot</th><th>U<sub>net</sub> top</th><th>U<sub>net</sub> bot</th><th>Force</th><th>Arm</th><th>Moment</th>
+          </tr>
+        </thead>
+        <tbody id="waterBody"></tbody>
+      </table>
+      <div class="hint">Lateral uses reduced strength only here: c<sub>d</sub> = c&prime;/FS and &phi;<sub>d</sub> = atan(tan&phi;&prime;/FS). Active K<sub>a</sub> is recalculated by Rankine; passive K<sub>p</sub> is recalculated by Caquot-Kerisel using Dp.</div>
+      </div>
+
+      <div id="tabBasal" class="tab-pane">
+      <h2>Basal Heave</h2>
+      <div class="section-note">Top-left is the decision area. The diagram explains the mechanism. The long tables below show each arc segment contribution.</div>
+      <div class="grid">
+        <div class="result-panel">
+          <table class="input-table">
+            <tbody>
+              <tr><td>Slip radius X (m)</td><td><input id="basalRadius" type="text"></td></tr>
+            </tbody>
+          </table>
+          <table class="check-table compact-check" style="margin-top:8px;">
+            <colgroup>
+              <col class="col-item"><col class="col-design"><col class="col-allow"><col class="col-result">
+            </colgroup>
+            <thead>
+              <tr><th>Check Item</th><th>Design</th><th>Allowable</th><th>Result</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Basal heave stability</td>
+                <td>Mr = <span id="basalMr">-</span> tf-m/m</td>
+                <td>&ge; Md = <span id="basalMd">-</span> tf-m/m</td>
+                <td><span id="basalResult" class="pill">-</span></td>
+              </tr>
+              <tr>
+                <td>Computed FS</td>
+                <td><span id="basalFsValue">-</span></td>
+                <td>&ge; <span id="basalFsRequired">-</span></td>
+                <td>-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="diagram-box">
+          <img src="../img/BaselHeaveCheck.png" alt="Basal heave check diagram">
+        </div>
+      </div>
+      <div class="long-table-title"><h2>Basal Heave Calculation</h2><span class="badge">Quick Totals</span></div>
+      <table class="check-table" style="margin-top:8px;">
+        <tbody>
+          <tr><td>Outside arc shear sum</td><td><span id="basalOutsideShear">-</span> t/m</td></tr>
+          <tr><td>Inside arc shear sum</td><td><span id="basalInsideShear">-</span> t/m</td></tr>
+          <tr><td>Arc shear sum, integral(tau dL)</td><td><span id="basalArcShear">-</span> t/m</td></tr>
+          <tr><td>Driving weight W</td><td><span id="basalDrivingWeight">-</span> t/m</td></tr>
+          <tr><td>Slip radius X</td><td><span id="basalRadiusOut">-</span> m</td></tr>
+        </tbody>
+      </table>
+      <div class="long-table-title"><h2>Outside Arc Segments</h2><span class="badge">Detail Table</span></div>
+      <table class="aligned-table">
+        <colgroup>
+          <col style="width:7.5%"><col style="width:8.5%"><col style="width:8.5%"><col style="width:13%">
+          <col style="width:7.5%"><col style="width:8.5%"><col style="width:8.5%"><col style="width:8.5%">
+          <col style="width:8.5%"><col style="width:11%"><col style="width:10%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Layer</th><th>z from</th><th>z to</th><th>Soil type</th><th>K<sub>a</sub></th><th>&theta;<sub>c</sub></th><th>&Delta;&theta;</th><th>&Delta;L</th><th>&tau;<sub>f</sub></th><th>&Delta;L&middot;&tau;<sub>f</sub></th><th>Moment</th>
+          </tr>
+        </thead>
+        <tbody id="basalOutsideBody"></tbody>
+      </table>
+      <div class="long-table-title"><h2>Inside Arc Segments</h2><span class="badge">Detail Table</span></div>
+      <table class="aligned-table">
+        <colgroup>
+          <col style="width:7.5%"><col style="width:8.5%"><col style="width:8.5%"><col style="width:13%">
+          <col style="width:7.5%"><col style="width:8.5%"><col style="width:8.5%"><col style="width:8.5%">
+          <col style="width:8.5%"><col style="width:11%"><col style="width:10%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Layer</th><th>z from</th><th>z to</th><th>Soil type</th><th>K<sub>p</sub></th><th>&theta;<sub>c</sub></th><th>&Delta;&theta;</th><th>&Delta;L</th><th>&tau;<sub>f</sub></th><th>&Delta;L&middot;&tau;<sub>f</sub></th><th>Moment</th>
+          </tr>
+        </thead>
+        <tbody id="basalInsideBody"></tbody>
+      </table>
+      <div class="hint">Uses a circular basal-heave mechanism. The slip radius X and surcharge q are editable here; Su is read from the soil table.</div>
+      </div>
+
+      <div id="tabSand" class="tab-pane">
+      <h2>Sand Boiling</h2>
+      <div class="section-note">Keep the FS checks in view first; the formula block below is only for verification.</div>
+      <div class="grid">
+        <div class="result-panel">
+          <table class="input-table">
+            <tbody>
+              <tr><td>Penetration depth, D (m)</td><td><input id="sandD" type="text"></td></tr>
+              <tr><td>Submerged unit weight, &gamma;&prime; (tf/m3)</td><td><input id="sandGammaSub" type="text"></td></tr>
+              <tr><td>Water unit weight, &gamma;<sub>w</sub> (tf/m3)</td><td><input id="sandGammaW" type="text" value="1.00"></td></tr>
+              <tr><td>Water head difference, &Delta;H<sub>w</sub> (m)</td><td><input id="sandDeltaHw" type="text"></td></tr>
+            </tbody>
+          </table>
+          <table class="check-table compact-check" style="margin-top:8px;">
+            <colgroup>
+              <col class="col-item"><col class="col-design"><col class="col-allow"><col class="col-result">
+            </colgroup>
+            <thead>
+              <tr><th>Check Item</th><th>Design</th><th>Allowable</th><th>Result</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Sand boiling FS1</td>
+                <td><span id="sandFs1Value">-</span></td>
+                <td>&ge; <span id="sandFs1Req">-</span></td>
+                <td><span id="sandFs1Result" class="pill">-</span></td>
+              </tr>
+              <tr>
+                <td>Sand boiling FS2</td>
+                <td><span id="sandFs2Value">-</span></td>
+                <td>&ge; <span id="sandFs2Req">-</span></td>
+                <td><span id="sandFs2Result" class="pill">-</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="diagram-box">
+          <img src="../img/SandBoilingCheck.png" alt="Sand boiling check diagram">
+        </div>
+      </div>
+      <div class="hint formula-line">F<sub>S1</sub> = 2&gamma;&prime;D / (&gamma;<sub>w</sub>&Delta;H<sub>w</sub>); F<sub>S2</sub> = &gamma;&prime;(&Delta;H<sub>w</sub> + 2D) / (&gamma;<sub>w</sub>&Delta;H<sub>w</sub>).</div>
+      </div>
+
+      <div id="tabUplift" class="tab-pane">
+      <h2>Hydraulic Uplift</h2>
+      <div class="section-note">Automatically checks each impermeable-over-permeable interface for every excavation stage. Interfaces above the wall toe use excavation-side water pressure; deeper interfaces use retained-side groundwater head.</div>
+      <div class="grid">
+        <div class="result-panel">
+          <table class="input-table">
+            <tbody>
+              <tr><td>Impermeable layer top depth (m)</td><td><input id="upliftImpermeableTop" type="text"></td></tr>
+              <tr><td>Water pressure at permeable layer top, Uw (tf/m2)</td><td><input id="upliftUw" type="text"></td></tr>
+            </tbody>
+          </table>
+          <table class="check-table compact-check" style="margin-top:8px;">
+            <colgroup>
+              <col class="col-item"><col class="col-design"><col class="col-allow"><col class="col-result">
+            </colgroup>
+            <thead>
+              <tr><th>Check Item</th><th>Design</th><th>Allowable</th><th>Result</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Hydraulic uplift</td>
+                <td>Resisting = <span id="upliftResisting">-</span> tf/m2</td>
+                <td>&ge; Uw*FS = <span id="upliftRequired">-</span> tf/m2</td>
+                <td><span id="upliftResult" class="pill">-</span></td>
+              </tr>
+              <tr>
+                <td>Computed FS</td>
+                <td><span id="upliftFsValue">-</span></td>
+                <td>&ge; <span id="upliftFsRequired">-</span></td>
+                <td>-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="diagram-box">
+          <img src="../img/UpliftCheck.png" alt="Hydraulic uplift check diagram">
+        </div>
+      </div>
+      <div class="hint formula-line">F<sub>S</sub> = Weight / U<sub>w</sub></div>
+      <h2>Hydraulic Uplift Calculation</h2>
+      <table class="check-table" style="margin-top:8px;">
+        <tbody>
+            <tr><td>Impermeable top depth</td><td><span id="upliftImpermeableTopOut">-</span> m</td></tr>
+            <tr><td>U<sub>w</sub></td><td><span id="upliftUwOut">-</span> tf/m2</td></tr>
+            <tr><td>Computed FS</td><td class="formula-line">Weight / U<sub>w</sub></td></tr>
+          </tbody>
+        </table>
+      <table class="check-table uplift-case-table" style="margin-top:8px;">
+        <colgroup>
+          <col style="width:7%;">
+          <col style="width:10%;">
+          <col style="width:21%;">
+          <col style="width:9%;">
+          <col style="width:9%;">
+          <col style="width:10%;">
+          <col style="width:8%;">
+          <col style="width:8%;">
+          <col style="width:8%;">
+          <col style="width:10%;">
+        </colgroup>
+        <thead>
+          <tr><th>Stage</th><th>Interface (m)</th><th>Layer pair</th><th>Exc. (m)</th><th>Water (m)</th><th>Weight</th><th>U<sub>w</sub></th><th>FS</th><th>Result</th><th>Ureq</th></tr>
+        </thead>
+        <tbody id="upliftCaseBody">
+          <tr><td colspan="10">-</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+    </main>
+  </div>
+</div>
+<script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+<script src="../js/Stable/stable_check.js"></script>
+<script>
+  (function installStableTrialChrome() {
+    const scrollToSection = (id) => {
+      const node = document.getElementById(id);
+      if (node) node.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    };
+    const setActive = (source) => {
+      document.querySelectorAll('.b1-side-button').forEach((btn) => {
+        btn.classList.toggle('active', btn === source);
+      });
+    };
+    const setActiveByTab = (tabId) => {
+      const side = document.querySelector('[data-stable-tab="' + tabId + '"]');
+      if (side) setActive(side);
+    };
+    const openStableTab = (tabId) => {
+      const original = document.querySelector('.stable-tab[data-target="' + tabId + '"]');
+      if (original) original.click();
+      setActiveByTab(tabId);
+      scrollToSection('stableChecks');
+    };
+    document.querySelectorAll('[data-stable-target]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setActive(btn);
+        scrollToSection(btn.dataset.stableTarget === 'input' ? 'stableInputs' : 'stableOverview');
+      });
+    });
+    document.querySelectorAll('[data-stable-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        openStableTab(btn.dataset.stableTab);
+      });
+    });
+    document.querySelectorAll('.stable-tab').forEach((btn) => {
+      btn.addEventListener('click', () => setActiveByTab(btn.dataset.target));
+    });
+    [
+      ['cardLateral', 'tabLateral'],
+      ['cardBasal', 'tabBasal'],
+      ['cardSand', 'tabSand'],
+      ['cardUplift', 'tabUplift'],
+    ].forEach(([cardId, tabId]) => {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', () => openStableTab(tabId));
+    });
+  }());
+</script>
+</body>
+</html>

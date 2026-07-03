@@ -1,0 +1,1987 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B1NEP FEM Results Trial</title>
+<script src="../js/Result/plotly-2.32.0.min.js" charset="utf-8"></script>
+<script src="../js/Result/wallcheck.js" charset="utf-8"></script>
+<script src="../js/strut_types.js" charset="utf-8"></script>
+<script src="../js/Result/supportcheck.js" charset="utf-8"></script>
+<script src="../js/Result/anchor_check.js" charset="utf-8"></script>
+<style>
+  html, body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #fafafa; color: #223; }
+  body { padding: 14px; }
+  h1 { font-size: 18px; margin: 0 0 10px; color: #224; }
+  h2 { font-size: 14px; margin: 16px 0 6px; color: #335; }
+  h3 { font-size: 13px; margin: 0 0 8px; color: #335; }
+  table { border-collapse: collapse; font-size: 12px; background: white; margin: 6px 0; width: 100%; }
+    th, td { border: 1px solid #ccd3db; padding: 4px 8px; text-align: right; }
+  th { background: #e8eaef; }
+  td.label, th.label { text-align: left; font-weight: bold; }
+  td.center { text-align: center; }
+  .hint { font-size: 11px; color: #666; margin-top: 4px; }
+  .toolbar-line { margin: 4px 0 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tab-toolbar { margin: 4px 0 8px; display:flex; justify-content:flex-end; align-items:center; }
+  .toolbar-line button, .sub-tabs button, .stage-tabs button {
+    padding: 4px 12px;
+    font-size: 12px;
+    border: 1px solid #99a6b3;
+    border-radius: 4px;
+    background: #f3f5f7;
+    cursor: pointer;
+  }
+  #status { color: #888; font-size: 12px; }
+  .sub-tabs, .stage-tabs { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
+  .sub-tabs button.active, .stage-tabs button.active { background: #fc6; border-color: #b80; font-weight: bold; }
+  .page-block { display: none; }
+  .page-block.active { display: block; }
+  .stage-tabs button.diverged {
+    background: #f8c8c8 !important;
+    border-color: #c33 !important;
+    color: #800 !important;
+  }
+  .stage-tabs button.diverged::before { content: '! '; }
+  #plots { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .plot-cell { background: white; border: 1px solid #ccc; border-radius: 4px; padding: 4px; }
+  .warn-banner {
+    background: #fff3cd; border: 1px solid #d8a800; border-left: 6px solid #c33;
+    border-radius: 4px; padding: 8px 12px; margin: 6px 0 10px; font-size: 12px; color: #663300;
+  }
+  .warn-banner h3, .sanity-banner h3 { margin: 0 0 4px; font-size: 13px; }
+  .warn-banner h3 { color: #c33; }
+  .warn-banner ul, .sanity-banner ul, .notes-list { margin: 4px 0 0 18px; padding: 0; }
+  .sanity-banner {
+    background: #fff8e1; border: 1px solid #d8a800; border-left: 6px solid #d8a800;
+    border-radius: 4px; padding: 8px 12px; margin: 6px 0 10px; font-size: 12px; color: #5a4400;
+  }
+  .sanity-banner h3 { color: #b86b00; }
+  .sanity-banner .checklist { margin-top: 6px; padding: 6px 10px; background: #fffbe6; border-radius: 3px; color: #4a3a00; }
+  .check-toolbar {
+      display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap: 10px; background: #fff; border: 1px solid #ccd3db; border-radius: 4px; padding: 10px;
+    }
+  .check-toolbar.wall-pass { background: #e8f6eb; border-color: #8bc39a; }
+  .check-toolbar.wall-fail { background: #fdeaea; border-color: #d99b9b; }
+  .check-toolbar.wall-na { background: #fff; border-color: #ccd3db; }
+  .check-toolbar.one-row { grid-template-columns: minmax(220px, 320px); }
+  .check-toolbar.sections-row { margin-top: 10px; grid-template-columns: repeat(4, minmax(180px, 1fr)); }
+  .check-toolbar.sections-vertical { margin-top: 10px; grid-template-columns: minmax(240px, 340px); justify-content: end; }
+  .field label { display: block; font-size: 11px; color: #667; margin-bottom: 4px; }
+  .field select, .field input {
+    width: 100%; padding: 6px 8px; font-size: 12px; border: 1px solid #b9c2cd;
+    border-radius: 4px; background: #fff; box-sizing: border-box;
+  }
+  .check-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; margin-top: 10px; }
+  .panel { background: #fff; border: 1px solid #ccd3db; border-radius: 4px; padding: 10px 12px; }
+  .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 8px 0 10px; }
+  .section-toolbar { margin-top: 8px; padding: 10px; background: #f7f8fa; border: 1px solid #d7dde4; border-radius: 4px; }
+    .check-stack { display: grid; gap: 10px; margin-top: 10px; }
+    .check-row { display: grid; grid-template-columns: 0.95fr 1.25fr; gap: 10px; align-items: start; }
+    #subPageSupport .input-grid { grid-template-columns: 1fr; }
+    .collapsible { overflow: hidden; }
+    .collapse-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        cursor: pointer;
+        user-select: none;
+        margin: -10px -12px 10px;
+        padding: 10px 12px;
+        border-bottom: 1px solid #e2e7ed;
+        background: #fbfcfd;
+      }
+    .collapsible.collapse-pass > .collapse-head {
+      background: #e8f6eb;
+    }
+    .collapsible.collapse-ok > .collapse-head {
+      background: #fff6de;
+    }
+    .collapsible.collapse-fail > .collapse-head {
+      background: #fdeaea;
+    }
+    .collapsible.collapse-na > .collapse-head {
+      background: #fbfcfd;
+    }
+    .collapse-head h3 { margin: 0; }
+    .collapse-arrow {
+      font-size: 14px;
+      color: #4b5b6c;
+      transition: transform 0.15s ease;
+    }
+    .collapsible.collapsed .collapse-arrow { transform: rotate(-90deg); }
+    .collapse-body { display: block; }
+    .collapsible.collapsed .collapse-body { display: none; }
+    .formula-box {
+      background: #f7f8fa; border: 1px solid #d7dde4; border-radius: 4px;
+      padding: 8px 10px; font-size: 12px; line-height: 1.7; margin-top: 8px;
+  }
+  .status-pass, .status-fail, .status-na {
+    display: inline-block; min-width: 56px; text-align: center; font-weight: bold; border-radius: 999px; padding: 2px 10px;
+  }
+    .status-pass { color: #0b6d2a; background: #e8f6eb; border: 1px solid #8bc39a; }
+    .status-fail { color: #9d1f1f; background: #fdeaea; border: 1px solid #d99b9b; }
+    .status-na { color: #666; background: #f2f2f2; border: 1px solid #ccc; }
+  .table-input {
+      width: 100%;
+      box-sizing: border-box;
+        border: 1px solid #bfc9d4;
+        border-radius: 3px;
+        padding: 2px 6px;
+        font: inherit;
+        background: #fff;
+      }
+    .tight-table th, .tight-table td { padding: 2px 6px; }
+    /* Support-section / geometry tables embed <select>s and <input>s
+       directly in the Value column.  Drop the right-cell text-align so
+       the form control sits flush at the cell's full width. */
+    .tight-table td input.table-input,
+    .tight-table td select.table-input { width: 100%; }
+    .compact-table-wrap { width: fit-content; max-width: 100%; }
+    /* Support pane layout: the right column stacks "Support section"
+       on top and "Support geometry" on the bottom.  Use flex with
+       space-between so the top panel hugs the column's top edge and
+       the bottom panel hugs the bottom aligning them with the left
+       "Support Summary" panel's top and bottom respectively. */
+    #subPageSupport .check-grid { align-items: stretch; }
+    #subPageSupport .check-grid > .check-stack {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      height: 100%;
+    }
+    /* Strut/anchor force table: don't span the full viewport, and bold
+       the Peak |N| column (last column) so the row max stands out. */
+    .strut-table-wrap { width: fit-content; max-width: 100%; margin: 6px 0; }
+    .strut-table-wrap table { width: auto; }
+    .strut-table-wrap th:last-child,
+    .strut-table-wrap td:last-child { font-weight: bold; }
+    /* L&W mode: side-by-side max-table / strut-table layout.  Each half
+       holds the same component the single-direction view would render,
+       just under a header that names the direction.
+       NOTE: `flex: 0 0 auto` (no shrink) ??without it, narrow viewports
+       force each half below its content width, but HTML tables don't
+       honour the resulting max-width and overflow into the gap, hiding
+       the spacing.  No-shrink means the items keep their content size
+       and wrap onto a new line when there's not enough room, which
+       guarantees the visible gap is always present. */
+    .lw-pair { display: flex; gap: 48px; align-items: flex-start; flex-wrap: wrap; margin: 6px 0; }
+    .lw-pair > .lw-half { flex: 0 0 auto; min-width: 0; }
+    /* Belt-and-braces: explicit horizontal margin between halves so the
+       gap stays visible even if a child table overflows into the flex
+       gap area (HTML tables ignore parent max-width). */
+    .lw-pair > .lw-half + .lw-half { margin-left: 16px; }
+    .lw-pair > .lw-half > h3 { margin: 0 0 6px; color: #335; font-size: 13px; }
+    /* Tab toolbar: keep ~8 px between sibling buttons (Export .txt /
+       Export .html) so they don't visually merge into one big button. */
+    .tab-toolbar { gap: 8px; }
+    .lw-tag { display: inline-block; padding: 1px 8px; border-radius: 999px;
+              font-size: 11px; font-weight: bold; margin-left: 6px; }
+    .lw-tag.lw-L { background: #d9e7f7; color: #0d4e8b; border: 1px solid #79a6d6; }
+    .lw-tag.lw-W { background: #ffe8d4; color: #8b4a0d; border: 1px solid #d6a279; }
+  </style>
+<link rel="stylesheet" href="../css/b1nep-modern.css">
+</head>
+<body class="b1-results-page">
+<div class="b1-shell">
+  <header class="b1-topbar">
+    <div class="b1-brand"><img class="b1-logo-img" src="../LOGO.png" alt="B1NEP logo"><span>B1NEP</span></div>
+    <nav class="b1-nav" aria-label="Result sections">
+      <a href="./builder.html">Project</a>
+      <a href="./builder.html">Site</a>
+      <a href="./builder.html">Stages</a>
+      <button type="button" class="active">Analysis</button>
+    </nav>
+    <div class="b1-actions">
+      <span class="b1-status-pill">Stability Check Passed</span>
+      <button class="b1-action-button b1-action-primary" type="button">Go FEM</button>
+      <button class="b1-icon-button" id="trialResultsExportTxt" title="Export results.txt">⇩</button>
+      <button class="b1-icon-button" title="Settings">⚙</button>
+    </div>
+  </header>
+  <div class="b1-layout">
+    <aside class="b1-sidebar" aria-label="FEM result navigation">
+      <button class="b1-side-button" data-result-page="rio"><strong>RIO</strong><span>Input</span></button>
+      <button class="b1-side-button active" data-result-page="analysis"><strong>FEM</strong><span>Result</span></button>
+      <button class="b1-side-button" data-result-page="checks" data-sub-page="wall"><strong>W</strong><span>Wall</span></button>
+      <button class="b1-side-button" data-result-page="checks" data-sub-page="support"><strong>S</strong><span>Support</span></button>
+      <button class="b1-side-button" id="sideAnchorCheck" data-result-page="checks" data-sub-page="anchor" style="display:none;"><strong>A</strong><span>Anchor</span></button>
+    </aside>
+    <main class="b1-main">
+  <div class="b1-page-head">
+    <div>
+      <h1 class="b1-page-title">FEM Results of <span id="title-case"></span><span id="title-base">(loading)</span></h1>
+      <div class="b1-subtitle">Displacement, moment, shear, strut load, diagrams, wall check, and support check.</div>
+    </div>
+  </div>
+    <div class="toolbar-line">
+      <span id="status"></span>
+    </div>
+
+  <div id="pageRio" class="page-block b1-rio-page">
+    <div class="b1-rio-toolbar">
+      <div>
+        <h2>RIO input</h2>
+        <span class="hint">Editable copy of the .rio text used for this FEM run.</span>
+      </div>
+      <button id="btnRunRioFEM" class="b1-action-button b1-action-primary" type="button">Run FEM from RIO</button>
+    </div>
+    <textarea id="rioInputText" spellcheck="false"></textarea>
+  </div>
+
+  <div id="pageAnalysis" class="page-block active">
+      <div class="tab-toolbar">
+        <button id="btnExportTxt">Export results.txt</button>
+      </div>
+      <div id="divergeBanner" style="display:none;"></div>
+      <div id="sanityBanner" style="display:none;"></div>
+      <h2>Maximum / minimum across all stages</h2>
+      <div id="maxTable"></div>
+    <h2>Strut / anchor loads (all stages)</h2>
+    <div id="strutTable"></div>
+    <h2>Per-stage profiles <span class="hint">(hover to see values)</span></h2>
+    <div class="stage-tabs" id="stageTabs"></div>
+    <div id="plots">
+      <div class="plot-cell" id="plotDisp"></div>
+      <div class="plot-cell" id="plotMoment"></div>
+      <div class="plot-cell" id="plotShear"></div>
+    </div>
+  </div>
+
+  <div id="pageChecks" class="page-block">
+      <h2>Checks</h2>
+    <div class="hint">Wall checks use the overall envelope result. Support checks use the selected support member and its maximum axial force across all stages.</div>
+
+    <div class="sub-tabs">
+      <button id="subTabWall" class="active">Wall Check</button>
+      <button id="subTabSupport">Support Check</button>
+      <button id="subTabAnchor" style="display:none;">Anchor Check</button>
+    </div>
+
+    <div id="subPageWall" class="page-block active">
+      <div class="check-toolbar">
+        <div class="field">
+          <label for="selWallType">Wall Type</label>
+          <select id="selWallType"></select>
+        </div>
+        <div class="field" id="fieldPileKind" style="display:none;">
+          <label for="selPileKind">Pile Section</label>
+          <select id="selPileKind">
+            <option value="single">Circular pile</option>
+            <option value="secant">Secant pile</option>
+          </select>
+        </div>
+        <div class="field" id="fieldWallFullLength" style="display:none;">
+          <label for="inpWallFullLength">Wall length (m) — from RIO</label>
+          <input id="inpWallFullLength" type="text" value="" readonly
+                 title="Auto-filled from the analysed .rio (wall total length)"
+                 style="background:#eef1f5;color:#445;">
+        </div>
+        <div class="field" id="fieldWallSection">
+          <label for="selWallSection">Wall Section</label>
+          <select id="selWallSection"></select>
+        </div>
+        <div class="field" id="fieldWallThickness" style="display:none;">
+          <label for="inpWallThickness">Thickness (cm)</label>
+          <input id="inpWallThickness" type="text" value="60">
+        </div>
+        <div class="field" id="fieldWallSpacing" style="display:none;">
+          <label for="inpWallSpacing">Spacing (m)</label>
+          <input id="inpWallSpacing" type="text" value="0.7">
+        </div>
+        <div class="field" id="fieldLaggingEnable" style="display:none;">
+          <label for="chkLaggingEnable">Lagging Check</label>
+          <label style="display:flex;align-items:center;gap:6px;height:28px;">
+            <input id="chkLaggingEnable" type="checkbox">
+          </label>
+        </div>
+        <div class="field" id="fieldWallDiameter" style="display:none;">
+          <label for="inpWallDiameter">Pile diameter, D (cm)</label>
+          <input id="inpWallDiameter" type="text" value="80">
+        </div>
+        <div class="field" id="fieldWallFc" style="display:none;">
+          <label for="inpWallFc">Concrete fc (kgf/cm^2)</label>
+          <input id="inpWallFc" type="text" value="280">
+        </div>
+      </div>
+      <div class="check-grid">
+        <div class="panel">
+          <h3>Wall input</h3>
+          <div id="wallSectionTable"></div>
+          <div id="wallRebarDesign"></div>
+        </div>
+        <div class="panel">
+          <h3>Wall output</h3>
+          <div id="wallSummary"></div>
+          <div style="display:flex;gap:6px;flex-wrap:nowrap;">
+            <div id="wallMomentPlot" style="height:420px;flex:1 1 0;min-width:0;"></div>
+            <div id="wallShearPlot"  style="height:420px;flex:1 1 0;min-width:0;"></div>
+          </div>
+          <div id="wallRebarResult"></div>
+          <div id="wallCheckTable"></div>
+          <div class="formula-box" id="wallFormulaBox"></div>
+        </div>
+      </div>
+      <div id="laggingCheckGrid" class="check-grid" style="display:none;margin-top:10px;">
+        <div class="panel">
+          <h3>Lagging Check input</h3>
+          <div id="laggingInputTable"></div>
+        </div>
+        <div class="panel">
+          <h3>Lagging Check output</h3>
+          <div id="laggingOutputTable"></div>
+          <div class="formula-box" id="laggingFormulaBox"></div>
+        </div>
+      </div>
+    </div>
+
+      <div id="subPageSupport" class="page-block">
+        <div class="check-grid">
+          <div class="panel">
+            <h3>Support Summary</h3>
+            <div id="supportSummary"></div>
+        </div>
+        <div class="check-stack" style="margin-top:0;">
+          <div class="panel">
+            <h3>Support section</h3>
+            <table class="tight-table">
+              <thead>
+                <tr><th class="label">Item</th><th>Value</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="label">Wale Section</td>
+                    <td><select id="selWaleSection" class="table-input"></select></td></tr>
+                <tr><td class="label">Horizontal Strut Section</td>
+                    <td><select id="selStrutSection" class="table-input"></select></td></tr>
+                <tr><td class="label">Angle Brace Section</td>
+                    <td><select id="selDiagSection" class="table-input"></select></td></tr>
+                <tr><td class="label">Diagonal Brace Section</td>
+                    <td><select id="selBraceSection" class="table-input"></select></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Static "Support geometry" inputs.  These live OUTSIDE the
+               dynamically-rebuilt #supportSummary table so that editing
+               them doesn't tear the input element out from under the
+               user's keystroke.  Initial values match supportDefaults
+               in the inline script. -->
+          <div class="panel">
+            <h3>Support geometry</h3>
+            <table class="tight-table">
+              <thead>
+                <tr><th class="label">Item</th><th>Value</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="label">Horizontal strut spacing, s_h (m)</td>
+                    <td><input id="inpWaleL1"       class="table-input" type="text" inputmode="decimal" value="6.300"></td></tr>
+                <tr><td class="label">Horizontal strut length, L (m)</td>
+                    <td><input id="inpStrutLu"      class="table-input" type="text" inputmode="decimal" value="2.700"></td></tr>
+                <tr><td class="label">Angle brace spacing, s_a (m)</td>
+                    <td><input id="inpAngleSpacing" class="table-input" type="text" inputmode="decimal" value="1.500"></td></tr>
+                <tr><td class="label">Angle brace angle, theta (deg)</td>
+                    <td><input id="inpAngleAngle"   class="table-input" type="text" inputmode="decimal" value="45.000"></td></tr>
+                <tr><td class="label">Distance to wall, s_d (m)</td>
+                    <td><input id="inpBraceSd"      class="table-input" type="text" inputmode="decimal" value="3.200"></td></tr>
+                <tr><td class="label">Diagonal brace angle, theta (deg)</td>
+                    <td><input id="inpBraceAngle"   class="table-input" type="text" inputmode="decimal" value="45.000"></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+        <div class="check-stack">
+          <div class="panel collapsible collapsed" data-collapse-id="wale">
+            <div class="collapse-head" role="button" tabindex="0" aria-expanded="false">
+              <h3>Wale check</h3>
+              <span class="collapse-arrow">&#9662;</span>
+            </div>
+            <div class="collapse-body">
+          <div class="check-row">
+          <div class="panel">
+              <h3>Wale result</h3>
+                <div id="waleCheckTable"></div>
+          </div>
+          <div class="panel">
+            <h3>Wale calculation</h3>
+            <div class="formula-box" id="waleFormulaBox"></div>
+          </div>
+        </div>
+        </div>
+        </div>
+
+          <div class="panel collapsible collapsed" data-collapse-id="strut">
+            <div class="collapse-head" role="button" tabindex="0" aria-expanded="false">
+             <h3>Horizontal strut check</h3>
+              <span class="collapse-arrow">&#9662;</span>
+            </div>
+            <div class="collapse-body">
+          <div class="check-row">
+            <div class="panel">
+                <h3>Horizontal strut result</h3>
+                <div id="strutCheckTable"></div>
+          </div>
+            <div class="panel">
+              <h3>Horizontal strut calculation</h3>
+            <div class="formula-box" id="strutFormulaBox"></div>
+          </div>
+          </div>
+          </div>
+          </div>
+
+          <div class="panel collapsible collapsed" data-collapse-id="angle">
+            <div class="collapse-head" role="button" tabindex="0" aria-expanded="false">
+              <h3>Angle brace check</h3>
+              <span class="collapse-arrow">&#9662;</span>
+            </div>
+            <div class="collapse-body">
+          <div class="check-row">
+            <div class="panel">
+              <h3>Angle brace result</h3>
+              <div id="angleCheckTable"></div>
+          </div>
+            <div class="panel">
+              <h3>Angle brace calculation</h3>
+              <div class="formula-box" id="angleFormulaBox"></div>
+            </div>
+          </div>
+          </div>
+          </div>
+
+          <div class="panel collapsible collapsed" data-collapse-id="brace">
+          <div class="collapse-head" role="button" tabindex="0" aria-expanded="false">
+              <h3>Diagonal brace check</h3>
+            <span class="collapse-arrow">&#9662;</span>
+          </div>
+          <div class="collapse-body">
+        <div class="check-row">
+          <div class="panel">
+                <h3>Diagonal brace result</h3>
+              <div id="braceCheckTable"></div>
+        </div>
+          <div class="panel">
+              <h3>Diagonal brace calculation</h3>
+            <div class="formula-box" id="braceFormulaBox"></div>
+          </div>
+        </div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="subPageAnchor" class="page-block">
+      <div class="check-grid">
+        <div class="panel">
+          <h3>Ground Anchor Summary</h3>
+          <div id="anchorSummary"></div>
+          <div id="anchorFsTable"></div>
+        </div>
+        <div class="panel">
+          <h3>Common Anchor Parameters</h3>
+          <table class="tight-table">
+            <thead>
+              <tr><th class="label">Parameter</th><th>Value</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="label">Design load override, T<sub>w</sub> (tf)</td>
+                  <td><input id="inpAnchorTw" class="table-input" type="text" inputmode="decimal" placeholder="Use peak |N|"></td></tr>
+              <tr><td class="label">Number of strands, N</td>
+                  <td><input id="inpAnchorStrandCount" class="table-input" type="text" inputmode="decimal" value="7"></td></tr>
+              <tr><td class="label">Strand diameter, D' (cm)</td>
+                  <td><select id="selAnchorStrandDia" class="table-input">
+                    <option value="0.95">0.95</option>
+                    <option value="1.11">1.11</option>
+                    <option value="1.27" selected>1.27</option>
+                    <option value="1.52">1.52</option>
+                  </select></td></tr>
+              <tr><td class="label">Strand area, A (cm²)</td>
+                  <td id="anchorStrandAreaCell">0.9871</td></tr>
+              <tr><td class="label">Tensile load per strand, f<sub>s</sub> (kgf)</td>
+                  <td id="anchorFsCell">18458.8</td></tr>
+              <tr><td class="label">0.2% proof load, f<sub>y</sub> (kgf)</td>
+                  <td id="anchorFyCell">15694.9</td></tr>
+              <tr><td class="label">Grout compressive strength, f<sub>c</sub>' (kgf/cm²)</td>
+                  <td><input id="inpAnchorFc" class="table-input" type="text" inputmode="decimal" value="210"></td></tr>
+              <tr><td class="label">Bond length, L<sub>a</sub> (m)</td>
+                  <td><input id="inpAnchorBondLength" class="table-input" type="text" inputmode="decimal" value="10"></td></tr>
+              <tr><td class="label">Drill hole diameter, D (cm)</td>
+                  <td><input id="inpAnchorBoreDia" class="table-input" type="text" inputmode="decimal" value="10"></td></tr>
+              <tr><td class="label">Ultimate grout-ground bond, τ<sub>u</sub> (kgf/cm²)</td>
+                  <td><input id="inpAnchorTauU" class="table-input" type="text" inputmode="decimal" value="4"></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="check-stack">
+        <div class="panel collapsible collapsed" data-collapse-id="anchor-tendon">
+          <div class="collapse-head" role="button" tabindex="0" aria-expanded="false">
+            <h3>Tendon strength check</h3>
+            <span class="collapse-arrow">&#9662;</span>
+          </div>
+          <div class="collapse-body">
+            <div class="check-row">
+              <div class="panel">
+                <h3>Tendon result</h3>
+                <div id="anchorTendonTable"></div>
+              </div>
+              <div class="panel">
+                <h3>Tendon calculation</h3>
+                <div class="formula-box" id="anchorTendonFormulaBox"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel collapsible collapsed" data-collapse-id="anchor-tendon-grout">
+          <div class="collapse-head" role="button" tabindex="0" aria-expanded="false">
+            <h3>Tendon-to-grout bond check</h3>
+            <span class="collapse-arrow">&#9662;</span>
+          </div>
+          <div class="collapse-body">
+            <div class="check-row">
+              <div class="panel">
+                <h3>Bond result</h3>
+                <div id="anchorTendonGroutTable"></div>
+              </div>
+              <div class="panel">
+                <h3>Bond calculation</h3>
+                <div class="formula-box" id="anchorTendonGroutFormulaBox"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel collapsible collapsed" data-collapse-id="anchor-ground">
+          <div class="collapse-head" role="button" tabindex="0" aria-expanded="false">
+            <h3>Grout-to-ground bond check</h3>
+            <span class="collapse-arrow">&#9662;</span>
+          </div>
+          <div class="collapse-body">
+            <div class="check-row">
+              <div class="panel">
+                <h3>Ground bond result</h3>
+                <div id="anchorGroundTable"></div>
+              </div>
+              <div class="panel">
+                <h3>Ground bond calculation</h3>
+                <div class="formula-box" id="anchorGroundFormulaBox"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    </main>
+  </div>
+</div>
+<script>
+const embeddedResults = (() => {
+  try {
+    return window.parent !== window || new URLSearchParams(window.location.search).get('embedded') === '1';
+  } catch (err) {
+    return window.parent !== window;
+  }
+})();
+if (embeddedResults) document.body.classList.add('embedded-results');
+
+let resultData = null;
+let currentStage = 0;
+// L&W mode: when `runFEMLW` ships {lw_mode, L, W}, renderFEMResults
+// unpacks L into `resultData` (the primary view that every existing
+// check / banner already drives off) and stashes W's payload here for
+// the LW-aware overlay paths (plotStage, plotEnvelope, side-by-side
+// max/strut tables).  In single-direction mode `secondaryResultData`
+// stays null so all those paths fall back to the original behaviour.
+let secondaryResultData = null;
+let lwMode = false;
+let currentCheckPayload = null;
+let supportSectionSelectionsBySupportId = {};
+let activeSupportSelectionId = '';
+let activeAnchorSelectionId = '';
+let anchorParamStateByAnchorId = {};
+let pyBridge = null;
+// Marker for whether the dynamically-rendered #supportSummary table
+// needs a full innerHTML rebuild on the next refreshCheckView() pass.
+// We rebuild ONLY when (a) new FEM results have arrived (the support
+// IDs and field defaults may have changed) or (b) the table doesn't
+// exist in the DOM yet.  In every other case we just update the
+// dynamic Peak Force R cell in place destroying the whole table on
+// each keystroke is what made the inputs un-typable.
+let supportSummaryNeedsRebuild = true;
+let supportCommonState = {
+  Fy_t_cm2: 2.4,
+  E_t_cm2: 2100,
+  temp_increase: 1.25,
+  // Fb and Fv are NOT editable they're computed from Fy and the
+  // short-term factor as 0.6 Fy * ST and 0.4 Fy * ST respectively.
+  // Leaving the override fields off the state means
+  // SupportCheckModule.pickMaterial() falls back to those formulas.
+  Ft: 24
+};
+// Default values for the support-check inputs that live inside the
+// dynamically-rendered support-summary table.  We can't poke them onto
+// the DOM at page-load time (the <input> elements don't exist until
+// refreshCheckView() builds the table), so getSupportInputs() falls
+// back to these whenever an input is missing or blank.  buildSupport-
+// SummaryHtml then uses inputs.wale.L1 / inputs.strut.L / ??to set the
+// initial value="?? attributes, so users see the defaults on first
+// render instead of zeros.
+const supportDefaults = {
+    wale_L1:        6.3,
+    wale_with_head: 'Y',
+    strut_L:        2.7,
+    strut_LL:       0.5,
+  strut_MbExtra:  0,
+  strut_DtLimit:  '',
+  angle_angle:    45,
+  angle_spacing:  1.5,
+  angle_LL:       0.5,
+  brace_sd:       3.2,
+  brace_angle:    45,
+  brace_LL:       0.5,
+};
+
+function fmtNum(x, dec = 3) { return x == null || isNaN(x) ? '-' : Number(x).toFixed(dec); }
+function escapeHtml(text) { return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtStatus(status) { if (status === 'PASS') return '<span class="status-pass">PASS</span>'; if (status === 'OK') return '<span class="status-pass">OK</span>'; if (status === 'FAIL') return '<span class="status-fail">FAIL</span>'; return '<span class="status-na">N/A</span>'; }
+function fillSelect(selectEl, values, labelFn) {
+  if(!selectEl) return;
+  const prev = selectEl.value;
+  selectEl.innerHTML='';
+  for (const v of values) {
+    const opt=document.createElement('option');
+    opt.value=v;
+    opt.textContent=labelFn ? labelFn(v) : v;
+    selectEl.appendChild(opt);
+  }
+  if(values.includes(prev)) selectEl.value = prev;
+  else if(selectEl.options.length) selectEl.selectedIndex = 0;
+}
+
+function setupBridge() {
+  if (typeof QWebChannel === 'undefined') return;
+  try {
+    new QWebChannel(qt.webChannelTransport, function(channel) {
+      pyBridge = channel.objects.pyBridge || null;
+      window.pyBridge = pyBridge;
+    });
+  } catch (e) {
+    console.log('[bridge] init failed', e);
+  }
+}
+
+function getPyBridge() {
+  if (pyBridge) return pyBridge;
+  if (window.pyBridge) {
+    pyBridge = window.pyBridge;
+    return pyBridge;
+  }
+  try {
+    if (window.parent && window.parent !== window && window.parent.pyBridge) {
+      pyBridge = window.parent.pyBridge;
+      window.pyBridge = pyBridge;
+      return pyBridge;
+    }
+  } catch (e) {
+    console.log('[bridge] parent lookup failed', e);
+  }
+  return null;
+}
+
+if (window.qt && window.qt.webChannelTransport) {
+  if (typeof QWebChannel === 'undefined') {
+    const s = document.createElement('script');
+    s.src = 'qrc:///qtwebchannel/qwebchannel.js';
+    s.onload = setupBridge;
+    document.head.appendChild(s);
+  } else {
+    setupBridge();
+  }
+}
+
+function currentSupportSelectionKey(explicitId) {
+  if(explicitId != null && explicitId !== '') return String(explicitId);
+  const sel = document.getElementById('selSupportId');
+  if(sel && sel.value) return String(sel.value);
+  return activeSupportSelectionId ? String(activeSupportSelectionId) : '';
+}
+function saveCurrentSupportSectionSelections(explicitId) {
+  const wale = document.getElementById('selWaleSection');
+  const strut = document.getElementById('selStrutSection');
+  const angle = document.getElementById('selDiagSection');
+  const diagonal = document.getElementById('selBraceSection');
+  if(!wale || !strut || !angle || !diagonal) return;
+  const key = currentSupportSelectionKey(explicitId);
+  if(!key) return;
+  // Capture geometry inputs that should follow the support-id switch
+  // alongside the section names ??otherwise user edits would get
+  // clobbered the next time they re-visit this sid.  The set mirrors
+  // what *SUPPORTCHECK can prefill, plus inpWaleL1 (which comes from
+  // the BUT line's S in the auto-fill path).
+  const grab = id => {
+    const el = document.getElementById(id);
+    return el ? el.value : null;
+  };
+  supportSectionSelectionsBySupportId[key] = {
+    wale:     wale.value,
+    strut:    strut.value,
+    angle:    angle.value,
+    diagonal: diagonal.value,
+    waleL1:        grab('inpWaleL1'),
+    waleWithHead:  grab('inpWaleWithHead'),
+    strutLu:       grab('inpStrutLu'),
+    angleSpacing:  grab('inpAngleSpacing'),
+    angleAngle:    grab('inpAngleAngle'),
+    braceSd:       grab('inpBraceSd'),
+    braceAngle:    grab('inpBraceAngle'),
+  };
+}
+// Normalise H-section identifiers across the two casing conventions in
+// the code base: the builder's STRUT_TYPES uses '?' (U+00D7), the
+// support-check library uses ASCII 'x'.  Otherwise the names match.
+function _normalizeSectionName(s) {
+  return String(s == null ? '' : s).replace(/[?x]/g, 'x').replace(/\s+/g, ' ').trim();
+}
+// Map a Builder strut_type label (e.g. 'H 350?350?12?19') to a key in
+// SupportCheckModule.sections (e.g. 'H 350x350x12x19').  Returns null
+// when no match is found ??caller leaves the UI on its previous value.
+function resolveStrutTypeToSection(name) {
+  if (!name) return null;
+  const target = _normalizeSectionName(name);
+  const sections = (window.SupportCheckModule && SupportCheckModule.sections) || {};
+  for (const k of Object.keys(sections)) {
+    if (_normalizeSectionName(k) === target) return k;
+  }
+  return null;
+}
+// FEM-supplied per-strut section names live at the top level of
+// resultData (`strut_types`) and on each stage's strut row.  Look them
+// up by sid (the same id used in the Support Summary dropdown).
+function femStrutTypeForId(sid) {
+  if (sid == null || sid === '' || !resultData) return null;
+  const key = String(sid);
+  const top = (resultData.strut_types || {})[key];
+  if (top) return top;
+  for (const stage of (resultData.stages || [])) {
+    for (const s of (stage.struts || [])) {
+      if (String(s.id) === key && s.strut_type) return s.strut_type;
+    }
+  }
+  return null;
+}
+// Walk every stage of `dataObj` looking for sid's spacing (s_h) AND
+// peak |force|.  Returns { spacing, peakAbsForce } or null when sid is
+// absent.  In a single .rio the spacing is constant per sid (BUT only
+// installs once with one S value), so we just take the first hit; the
+// |force| max scans all stages.
+function statsForStrutInPayload(dataObj, sid) {
+  if (!dataObj || sid == null || sid === '') return null;
+  const key = String(sid);
+  let spacing = null;
+  let peakAbs = 0;
+  let seen = false;
+  for (const stage of (dataObj.stages || [])) {
+    for (const s of (stage.struts || [])) {
+      if (String(s.id) !== key) continue;
+      seen = true;
+      if (spacing == null && s.spacing != null && Number.isFinite(Number(s.spacing))) {
+        spacing = Number(s.spacing);
+      }
+      const f = Math.abs(Number(s.force) || 0);
+      if (f > peakAbs) peakAbs = f;
+    }
+  }
+  return seen ? { spacing, peakAbsForce: peakAbs } : null;
+}
+// Pick the governing (= peak |force| larger) of the two LW payloads
+// Per-strut Support Check prefill captured from `*SUPPORTCHECK` JSON
+// comment lines in the .rio.  Lives at resultData.support_check[sid].
+// In LW mode the two payloads usually carry the same prefill (shared
+// edits flow from L ??W); if they disagree we prefer L.  Returns null
+// for sids that have no prefill, leaving Result Check on its defaults.
+function femSupportCheckForId(sid) {
+  if (sid == null || sid === '') return null;
+  const key = String(sid);
+  const fromL = (resultData && resultData.support_check)
+                ? resultData.support_check[key] : null;
+  if (fromL && typeof fromL === 'object') return fromL;
+  if (lwMode && secondaryResultData && secondaryResultData.support_check) {
+    const fromW = secondaryResultData.support_check[key];
+    if (fromW && typeof fromW === 'object') return fromW;
+  }
+  return null;
+}
+// for the same sid, and return its spacing.  In single-direction mode
+// this just returns the L-side spacing.  Returns null when the sid is
+// not found in any payload or none carry a spacing field (external
+// .rio without spacing in struts).
+function femGoverningSpacingForId(sid) {
+  const statsL = statsForStrutInPayload(resultData,          sid);
+  const statsW = (lwMode && secondaryResultData)
+                 ? statsForStrutInPayload(secondaryResultData, sid) : null;
+  let chosen;
+  if (statsL && statsW) {
+    chosen = statsW.peakAbsForce > statsL.peakAbsForce ? statsW : statsL;
+  } else {
+    chosen = statsL || statsW;
+  }
+  return chosen && chosen.spacing != null ? chosen.spacing : null;
+}
+function applySupportSectionSelectionsForSupportId(explicitId) {
+  const key = currentSupportSelectionKey(explicitId);
+  const saved = supportSectionSelectionsBySupportId[key];
+  const wale = document.getElementById('selWaleSection');
+  const strut = document.getElementById('selStrutSection');
+  const angle = document.getElementById('selDiagSection');
+  const diagonal = document.getElementById('selBraceSection');
+  if(!wale || !strut || !angle || !diagonal) return;
+  const waleL1Inp = document.getElementById('inpWaleL1');
+  if(saved) {
+    if(saved.wale) wale.value = saved.wale;
+    if(saved.strut) strut.value = saved.strut;
+    if(saved.angle) angle.value = saved.angle;
+    if(saved.diagonal) diagonal.value = saved.diagonal;
+    // Restore every geometry input that the save path captured.  Each
+    // is treated as opt-in: a null / empty saved value leaves the live
+    // input alone, so an older snapshot (pre-extension) doesn't blank
+    // out modern fields.
+    function restore(id, savedVal) {
+      if (savedVal == null || savedVal === '') return;
+      const el = document.getElementById(id);
+      if (el) el.value = savedVal;
+    }
+    restore('inpWaleL1',       saved.waleL1);
+    restore('inpWaleWithHead', saved.waleWithHead);
+    restore('inpStrutLu',      saved.strutLu);
+    restore('inpAngleSpacing', saved.angleSpacing);
+    restore('inpAngleAngle',   saved.angleAngle);
+    restore('inpBraceSd',      saved.braceSd);
+    restore('inpBraceAngle',   saved.braceAngle);
+  } else {
+    // First time we see this support id ??pre-fill from FEM metadata
+    // so the user doesn't retype.  Two pieces of metadata:
+    //   1. Strut/anchor section identifier (from `*STRUT <type>`
+    //      comments in the .rio).  Used to set all four section
+    //      selectors.  External .rio imports without that comment
+    //      fall through; the user picks the section manually.
+    //   2. BUT spacing S (from the BUT line itself).  Used to set the
+    //      wale s_h geometry input.  In LW mode the GOVERNING
+    //      direction's spacing is used ??the side with the larger
+    //      peak |force| for this sid ??so the wale check sees the
+    //      conservative span.
+    const sectionKey = resolveStrutTypeToSection(femStrutTypeForId(key));
+    if (sectionKey) {
+      wale.value     = sectionKey;
+      strut.value    = sectionKey;
+      angle.value    = sectionKey;
+      diagonal.value = sectionKey;
+    }
+    const sH = femGoverningSpacingForId(key);
+    if (sH != null && Number.isFinite(sH) && waleL1Inp) {
+      waleL1Inp.value = sH;
+    }
+    // 3. Per-strut Support Check prefill (`*SUPPORTCHECK` comment).
+    //    These overrides come from the Simple Stage Maker's Adv panel
+    //    (or any future per-BUT Adv editor) and take priority over the
+    //    section + s_h derived from items (1) and (2) above when set.
+    const sc = femSupportCheckForId(key);
+    if (sc) {
+      function applySection(secValue, selectEl) {
+        if (!secValue || !selectEl) return;
+        const k = resolveStrutTypeToSection(secValue);
+        if (k) selectEl.value = k;
+      }
+      applySection(sc.wale_section,     wale);
+      applySection(sc.strut_section,    strut);
+      applySection(sc.angle_section,    angle);
+      applySection(sc.diagonal_section, diagonal);
+      function applyNum(value, inputId) {
+        if (value == null) return;
+        const n = Number(value);
+        if (!isFinite(n)) return;
+        const el = document.getElementById(inputId);
+        if (el) el.value = String(n);
+      }
+      applyNum(sc.strut_L,     'inpStrutLu');
+      applyNum(sc.angle_s_a,   'inpAngleSpacing');
+      applyNum(sc.angle_theta, 'inpAngleAngle');
+      applyNum(sc.brace_s_d,   'inpBraceSd');
+      applyNum(sc.brace_theta, 'inpBraceAngle');
+      if (sc.wale_with_head === true || sc.wale_with_head === false) {
+        const wh = document.getElementById('inpWaleWithHead');
+        if (wh) wh.value = sc.wale_with_head ? 'Y' : 'N';
+      }
+    }
+    // Snapshot the auto-filled values so re-visiting this sid restores
+    // them (and so a later user edit overrides them via the save path).
+    saveCurrentSupportSectionSelections(key);
+  }
+}
+function buildMaxTable(data) {
+  const ex = data.extremes || {};
+  function row(label, key, unit) {
+    const mx = ex[key] && ex[key].max ? ex[key].max : null;
+    const mn = ex[key] && ex[key].min ? ex[key].min : null;
+    const cell = (e) => e ? `${fmtNum(e.value,3)}<br><small>z=${fmtNum(e.z,2)} m, Stage ${e.stage}</small>` : '-';
+    return `<tr><td class="label">${label}<br><small>${unit}</small></td><td>${cell(mx)}</td><td>${cell(mn)}</td></tr>`;
+  }
+    return `<div class="compact-table-wrap"><table><thead><tr><th></th><th>Maximum</th><th>Minimum</th></tr></thead><tbody>${row('Displacement','disp_mm','mm')}${row('Moment','moment','tf-m/m')}${row('Shear','shear','tf/m')}</tbody></table></div><div class="hint">Signed extremes across all stages.</div>`;
+  }
+
+function buildStrutTable(data) {
+  const stages = data.stages || [];
+  const idSet = new Set();
+  for (const st of stages) for (const s of (st.struts || [])) idSet.add(s.id);
+  const ids = Array.from(idSet).sort((a,b)=>a-b);
+  if (!ids.length) return '<i>No struts/anchors in any stage.</i>';
+  let html = '<div class="strut-table-wrap"><table><thead><tr><th>id<br><small>z (m)</small></th>';
+  for (const st of stages) html += `<th>${st.name||'-'}</th>`;
+  html += '<th>Peak |N|<br><small>T</small></th></tr></thead><tbody>';
+  for (const id of ids) {
+    let z = null;
+    let peakAbs = 0;
+    for (const st of stages) { const s=(st.struts||[]).find(x=>x.id===id); if (s) { z=s.z; break; } }
+    html += `<tr><td class="label">id ${id}<br><small>z=${fmtNum(z,2)}</small></td>`;
+    for (const st of stages) {
+      const s = (st.struts || []).find(x => x.id === id);
+      if (s) peakAbs = Math.max(peakAbs, Math.abs(Number(s.force || 0)));
+      html += `<td>${s ? fmtNum(s.force, 2) : '-'}</td>`;
+    }
+    html += `<td>${peakAbs > 0 ? fmtNum(peakAbs, 2) : '-'}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+  html += '<div class="hint">Cell value: axial force (tf). Negative means compression. Peak |N| is bold.</div>';
+  return html;
+}
+
+function _layoutBase(xtitle, titleText, ...arrays) {
+  let amax = 0;
+  for (const arr of arrays) { if (!arr) continue; for (const v of arr) if (v != null && !isNaN(v)) amax = Math.max(amax, Math.abs(v)); }
+  amax = amax > 0 ? amax * 1.08 : 1;
+  return {
+    title:    { text: titleText, font: { size: 13 } },
+    margin:   { l: 40, r: 10, t: 30, b: 40 },
+    xaxis:    { title: { text: xtitle }, range: [-amax, amax],
+                zeroline: true, zerolinecolor: '#666', zerolinewidth: 1.5 },
+    yaxis:    { title: { text: 'z (m)' }, autorange: 'reversed' },
+    height:   460,
+    hovermode: 'closest',
+    // Show the legend in LW mode so users can tell the two overlaid
+    // direction traces apart; single-direction mode keeps the legend
+    // hidden (only one trace, redundant label).
+    showlegend: !!(lwMode && secondaryResultData),
+    legend:   { x: 0.02, y: 0.02, bgcolor: 'rgba(255,255,255,0.85)',
+                bordercolor: '#aaa', borderwidth: 1, font: { size: 11 } },
+  };
+}
+
+// Build the disp/moment/shear traces for one stage payload.  `label` is
+// the legend prefix (e.g. 'L' or 'W'); `dash` overrides the line style
+// (use 'dash' for the secondary overlay so the two traces are visually
+// distinguishable even in monochrome printouts).
+function _stageTraces(st, label, color, dash) {
+  const z = st.z || [];
+  const dashOpt = dash ? { dash } : {};
+  return {
+    disp:   { x: st.disp_mm || [], y: z, mode: 'lines+markers',
+              name: label, line: Object.assign({ color, width: 1.7 }, dashOpt),
+              marker: { size: 4 },
+              hovertemplate: `${label}: z=%{y:.3f} m<br>u=%{x:.4f} mm<extra></extra>` },
+    moment: { x: st.moment  || [], y: z, mode: 'lines+markers',
+              name: label, line: Object.assign({ color, width: 1.7 }, dashOpt),
+              marker: { size: 4 },
+              hovertemplate: `${label}: z=%{y:.3f} m<br>M=%{x:.4f} tf-m/m<extra></extra>` },
+    shear:  { x: st.shear   || [], y: z, mode: 'lines+markers',
+              name: label, line: Object.assign({ color, width: 1.7 }, dashOpt),
+              marker: { size: 4 },
+              hovertemplate: `${label}: z=%{y:.3f} m<br>V=%{x:.4f} tf/m<extra></extra>` },
+  };
+}
+
+function plotStage(idx) {
+  if (!resultData) return;
+  const stages = resultData.stages || [];
+  if (idx < 0 || idx >= stages.length) return;
+  currentStage = idx;
+  const offset = (resultData.has_envelope && resultData.envelope) ? 1 : 0;
+  document.querySelectorAll('#stageTabs button').forEach((b,i)=>b.classList.toggle('active', i===idx+offset));
+  const st = stages[idx];
+  // Primary (L in LW mode, sole payload otherwise) uses the original
+  // disp=blue, moment=red, shear=green colour scheme.  Secondary (W)
+  // gets a single contrasting colour with dashed lines across all three
+  // plots so it reads as one consistent overlay.
+  const Lcolors = { disp: '#06c', moment: '#c33', shear: '#0a6' };
+  const Wcolor  = '#e08800';
+  const Llabel  = (lwMode && secondaryResultData) ? 'L' : 'Displacement';
+  const trL = _stageTraces(st, Llabel, Lcolors.disp,   null);
+  const trM = _stageTraces(st, Llabel, Lcolors.moment, null);
+  const trV = _stageTraces(st, Llabel, Lcolors.shear,  null);
+  const dispTraces   = [trL.disp];
+  const momentTraces = [trM.moment];
+  const shearTraces  = [trV.shear];
+  if (lwMode && secondaryResultData) {
+    const stW = (secondaryResultData.stages || [])[idx];
+    if (stW) {
+      const trW = _stageTraces(stW, 'W', Wcolor, 'dash');
+      dispTraces.push(trW.disp);
+      momentTraces.push(trW.moment);
+      shearTraces.push(trW.shear);
+    }
+  }
+  // Plot-level amax sources: both directions' arrays for that plot.
+  const stW = (lwMode && secondaryResultData) ? (secondaryResultData.stages || [])[idx] : null;
+  Plotly.react('plotDisp',   dispTraces,   _layoutBase('Displacement (mm)','Displacement', st.disp_mm, stW && stW.disp_mm), {responsive:true, displaylogo:false});
+  Plotly.react('plotMoment', momentTraces, _layoutBase('Moment (tf-m/m)','Bending Moment', st.moment, stW && stW.moment),  {responsive:true, displaylogo:false});
+  Plotly.react('plotShear',  shearTraces,  _layoutBase('Shear (tf/m)','Shear',             st.shear,  stW && stW.shear),    {responsive:true, displaylogo:false});
+  refreshCheckView();
+}
+
+function plotEnvelope() {
+  if (!resultData || !resultData.envelope) return;
+  currentStage = -1;
+  document.querySelectorAll('#stageTabs button').forEach((b,i)=>b.classList.toggle('active', i===0));
+  const env = resultData.envelope;
+  const z = env.z || [];
+  function pair(xMin, xMax, zArr, color, label, unit, prefix) {
+    return [
+      {x:xMin, y:zArr, mode:'lines', name:`${prefix}min`,
+       line:{color, width:1.5, dash:'dot'},
+       hovertemplate:`${prefix}: z=%{y:.3f} m<br>${label} min=%{x:.4f} ${unit}<extra></extra>`},
+      {x:xMax, y:zArr, mode:'lines', name:`${prefix}max`,
+       line:{color, width:1.5},
+       hovertemplate:`${prefix}: z=%{y:.3f} m<br>${label} max=%{x:.4f} ${unit}<extra></extra>`},
+    ];
+  }
+  const Lprefix = (lwMode && secondaryResultData) ? 'L ' : '';
+  const envW = (lwMode && secondaryResultData) ? secondaryResultData.envelope : null;
+  const zW   = envW ? (envW.z || []) : [];
+
+  const dispTr   = pair(env.disp_mm_min, env.disp_mm_max, z, '#06c', 'u', 'mm',     Lprefix);
+  const momentTr = pair(env.moment_min,  env.moment_max,  z, '#c33', 'M', 'tf-m/m', Lprefix);
+  const shearTr  = pair(env.shear_min,   env.shear_max,   z, '#0a6', 'V', 'tf/m',   Lprefix);
+  if (envW) {
+    dispTr.push  (...pair(envW.disp_mm_min, envW.disp_mm_max, zW, '#e08800', 'u', 'mm',     'W '));
+    momentTr.push(...pair(envW.moment_min,  envW.moment_max,  zW, '#e08800', 'M', 'tf-m/m', 'W '));
+    shearTr.push (...pair(envW.shear_min,   envW.shear_max,   zW, '#e08800', 'V', 'tf/m',   'W '));
+  }
+  const ranges = (a, b) => [a, b];
+  Plotly.react('plotDisp',   dispTr,   _layoutBase('Displacement (mm)','Displacement - envelope', env.disp_mm_min, env.disp_mm_max, envW && envW.disp_mm_min, envW && envW.disp_mm_max), {responsive:true,displaylogo:false});
+  Plotly.react('plotMoment', momentTr, _layoutBase('Moment (tf-m/m)','Bending Moment - envelope', env.moment_min,  env.moment_max,  envW && envW.moment_min,  envW && envW.moment_max),  {responsive:true,displaylogo:false});
+  Plotly.react('plotShear',  shearTr,  _layoutBase('Shear (tf/m)','Shear - envelope',             env.shear_min,   env.shear_max,   envW && envW.shear_min,   envW && envW.shear_max),    {responsive:true,displaylogo:false});
+  refreshCheckView();
+}
+
+function buildStageTabs(data) {
+  const host = document.getElementById('stageTabs');
+  host.innerHTML = '';
+  if (data.has_envelope && data.envelope) {
+    const eb = document.createElement('button');
+    eb.textContent = 'Envelope';
+    eb.onclick = () => plotEnvelope();
+    host.appendChild(eb);
+  }
+  (data.stages || []).forEach((st,i)=>{
+    const b=document.createElement('button');
+    b.textContent=st.name||('Stage '+(i+1));
+    const conv=st.convergence||{};
+    if (conv.converged===false) { b.classList.add('diverged'); b.title=`did not converge - ${conv.iters||0} iters, du = ${(conv.du||0).toExponential(2)}`; }
+    b.onclick=()=>plotStage(i);
+    host.appendChild(b);
+  });
+}
+
+function buildDivergenceBanner(data) {
+  const host=document.getElementById('divergeBanner');
+  const list=(data&&data.divergent_stages)||[];
+  if(!list.length){host.style.display='none';host.innerHTML='';return;}
+  host.style.display='block'; host.className='warn-banner';
+  host.innerHTML='<h3>Convergence warning</h3><ul>'+list.map(d=>`<li>Stage ${d.stage} (${d.tag||'*'}) - ${d.iters||0} iters, du = ${(d.du||0).toExponential(2)}</li>`).join('')+'</ul>';
+}
+
+function buildSanityBanner(data) {
+  const host=document.getElementById('sanityBanner');
+  const stages=(data&&data.stages)||[];
+  if(!stages.length){host.style.display='none';host.innerHTML='';return;}
+  const Lm=Number(data.L)||0, Lmm=Lm*1000, ex=data.extremes||{}, uPeak=Math.max(Math.abs(ex.disp_mm?.max?.value||0),Math.abs(ex.disp_mm?.min?.value||0));
+  const issues=[];
+  if (Lmm>0 && uPeak>0.1*Lmm && uPeak>500) issues.push(`Peak displacement |u| = ${uPeak.toFixed(1)} mm is more than 10% of wall length.`);
+  if(!issues.length){host.style.display='none';host.innerHTML='';return;}
+  host.style.display='block'; host.className='sanity-banner';
+  host.innerHTML='<h3>Results look unusual - please re-check your inputs</h3><ul>'+issues.map(x=>`<li>${x}</li>`).join('')+'</ul><div class="checklist">Suggested checks: wall sections, soil parameters, EXC levels, support stiffness and preload, water-table depths, and stage definitions.</div>';
+}
+
+function _pad(s,n){s=String(s);return s.length>=n?s:s+' '.repeat(n-s.length);}
+function _padL(s,n){s=String(s);return s.length>=n?s:' '.repeat(n-s.length)+s;}
+function _extRow(label,ext){ if(!ext) return _pad(label,18)+'-'; return _pad(label,18)+_padL(Number(ext.value).toFixed(4),11)+'   at z = '+_padL(Number(ext.z).toFixed(3),7)+' m  (Stage '+ext.stage+')';}
+function buildResultsText(data){
+  const lines=[]; lines.push('FEM RESULTS - '+(data.base||'')); lines.push('Wall length L = '+(data.L!=null?data.L:'-')+' m'); lines.push('Stages: '+(data.n_stages||0)); lines.push('');
+  if(data.extremes){const ex=data.extremes; lines.push('============================================================'); lines.push('  MAX / MIN ACROSS ALL STAGES'); lines.push('============================================================'); lines.push(_extRow('Max displacement', ex.disp_mm&&ex.disp_mm.max)+'  mm'); lines.push(_extRow('Min displacement', ex.disp_mm&&ex.disp_mm.min)+'  mm'); lines.push(_extRow('Max moment', ex.moment&&ex.moment.max)+'  tf-m/m'); lines.push(_extRow('Min moment', ex.moment&&ex.moment.min)+'  tf-m/m'); lines.push(_extRow('Max shear', ex.shear&&ex.shear.max)+'  tf/m'); lines.push(_extRow('Min shear', ex.shear&&ex.shear.min)+'  tf/m'); lines.push('');}
+  for(const st of (data.stages||[])){ lines.push('============================================================'); lines.push('  '+(st.name||'stage')+(st.action?' - '+st.action:'')); lines.push('============================================================'); lines.push(_pad('z (m)',12)+_pad('disp (mm)',14)+_pad('M (tf-m/m)',14)+_pad('V (tf/m)',12)); const z=st.z||[],u=st.disp_mm||[],M=st.moment||[],V=st.shear||[]; for(let i=0;i<z.length;i++) lines.push(_padL(z[i].toFixed(3),10)+'  '+_padL((u[i]!=null?u[i].toFixed(4):'-'),12)+'  '+_padL((M[i]!=null?M[i].toFixed(4):'-'),12)+'  '+_padL((V[i]!=null?V[i].toFixed(4):'-'),10)); lines.push('');}
+  return lines.join('\n')+'\n';
+}
+
+function splitEditedRioForLW(text) {
+  const markerL = '* --- L direction RIO ---';
+  const markerW = '* --- W direction RIO ---';
+  const iL = text.indexOf(markerL);
+  const iW = text.indexOf(markerW);
+  if (iL < 0 || iW < 0 || iW <= iL) return null;
+  return {
+    L: text.slice(iL + markerL.length, iW).trim(),
+    W: text.slice(iW + markerW.length).trim(),
+  };
+}
+
+function runEditedRioFEM() {
+  const bridge = getPyBridge();
+  const rioEl = document.getElementById('rioInputText');
+  const statusEl = document.getElementById('status');
+  const btn = document.getElementById('btnRunRioFEM');
+  const rioText = rioEl ? rioEl.value : '';
+  if (!rioText.trim()) {
+    alert('RIO input is empty.');
+    return;
+  }
+  if (!bridge || (!bridge.runFEMInline && !bridge.runFEMLWInline)) {
+    alert('Python bridge is not available in this window.');
+    return;
+  }
+  const lw = splitEditedRioForLW(rioText);
+  if (lw && !bridge.runFEMLWInline) {
+    alert('L/W FEM bridge is not available in this window.');
+    return;
+  }
+  if (!lw && !bridge.runFEMInline) {
+    alert('FEM bridge is not available in this window.');
+    return;
+  }
+  if (statusEl) {
+    statusEl.textContent = lw ? 'Running FEM from edited L/W RIO...' : 'Running FEM from edited RIO...';
+    statusEl.style.color = '#667';
+  }
+  if (btn) btn.disabled = true;
+  const done = (reply) => {
+    if (btn) btn.disabled = false;
+    try {
+      const r = JSON.parse(reply);
+      if (r && r.error) {
+        if (statusEl) {
+          statusEl.textContent = 'FEM error.';
+          statusEl.style.color = '#c33';
+        }
+        alert('FEM error:\n' + r.error);
+        return;
+      }
+      const payload = r && r.payload ? r.payload : r;
+      window.renderFEMResults(payload);
+      if (statusEl) {
+        statusEl.textContent = lw ? 'FEM done (L+W) - results refreshed from RIO.' : 'FEM done - results refreshed from RIO.';
+        statusEl.style.color = '#667';
+      }
+      activateMainTab('analysis');
+      document.querySelectorAll('.b1-side-button').forEach((sideBtn) => {
+        sideBtn.classList.toggle('active', sideBtn.dataset.resultPage === 'analysis');
+      });
+    } catch (e) {
+      if (statusEl) {
+        statusEl.textContent = 'FEM finished, but results could not be parsed.';
+        statusEl.style.color = '#c33';
+      }
+      alert('FEM finished, but results could not be parsed.');
+    }
+  };
+  if (lw) bridge.runFEMLWInline(lw.L, lw.W, done);
+  else bridge.runFEMInline(rioText, done);
+}
+
+  function getSupportInputs() {
+    const v=id=>{ const el=document.getElementById(id); return el ? el.value : ''; };
+    const common = {
+      Fy_t_cm2:Number(v('inpSupportFy') || supportCommonState.Fy_t_cm2 || 0),
+      E_t_cm2:Number(v('inpSupportE') || supportCommonState.E_t_cm2 || 0),
+      temp_increase:Number(v('inpSupportShortTerm') || supportCommonState.temp_increase || 0),
+      Ft:Number(v('inpSupportFt') || supportCommonState.Ft || 0)
+      // Fbx_override / Fv_override intentionally omitted ??pickMaterial
+      // sees them as null and computes Fb = 0.6 Fy ST, Fv = 0.4 Fy ST.
+    };
+    const supportIdValue = v('selSupportId');
+    const supportIds = resultData
+      ? (window.AnchorCheckModule && AnchorCheckModule.listSupportInstalls
+          ? AnchorCheckModule.listSupportInstalls(resultData)
+          : SupportCheckModule.listSupportIds(resultData))
+      : [];
+    const fallbackSupportId = supportIds.length ? String(supportIds[0].id) : '';
+    // Fallbacks fish from supportDefaults so the initial render shows
+    // sensible numbers instead of zeros when the inputs don't exist
+    // yet (which is the case on the very first refreshCheckView call).
+    const dflt = supportDefaults;
+    return {
+        family:'h_steel',
+        common,
+        supportId:supportIdValue || fallbackSupportId,
+        wale:{ sectionName:v('selWaleSection'), L1:Number(v('inpWaleL1')||dflt.wale_L1), withHead:(v('inpWaleWithHead')||dflt.wale_with_head)==='Y' },
+    strut:{ sectionName:v('selStrutSection'), L:Number(v('inpStrutLu')||dflt.strut_L), LL:Number(v('inpStrutLiveLoad')||dflt.strut_LL), MbExtra:Number(v('inpStrutMbExtra')||dflt.strut_MbExtra), DtLimitText:v('inpStrutDtLimit') || dflt.strut_DtLimit },
+      diag:{ sectionName:v('selDiagSection'), angleDeg:Number(v('inpAngleAngle')||dflt.angle_angle), spacing:Number(v('inpAngleSpacing')||dflt.angle_spacing), LL:Number(v('inpAngleLiveLoad')||dflt.angle_LL) },
+        brace:{
+        sectionName:v('selBraceSection'),
+        sh:Number(v('inpWaleL1')||dflt.wale_L1),
+        sd:Number(v('inpBraceSd')||dflt.brace_sd),
+        angleDeg:Number(v('inpBraceAngle')||dflt.brace_angle),
+        LL:Number(v('inpBraceLiveLoad')||dflt.brace_LL)
+      }
+  };
+}
+
+function buildWallSummaryHtml(wall) {
+  return `<table>
+    <thead>
+      <tr><th class="label">Item</th><th>Value</th><th>Source</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="label">Demand source</td><td>${escapeHtml(wall.demand.sourceLabel)}</td><td>All stages</td></tr>
+      <tr><td class="label">|Mmax|</td><td>${fmtNum(wall.demand.Mmax_tf_m_per_m,3)} tf-m/m</td><td>${escapeHtml(wall.demand.sourceLabel)}</td></tr>
+      <tr><td class="label">|Vmax|</td><td>${fmtNum(wall.demand.Vmax_tf_per_m,3)} tf/m</td><td>${escapeHtml(wall.demand.sourceLabel)}</td></tr>
+    </tbody>
+  </table>`;
+}
+
+function buildSupportSummaryHtml(supportDemand, inputs) {
+    // NOTE: This builds the dynamic Support Summary panel ONLY.  The
+    // geometry inputs (inpWaleL1, inpStrutLu, inpAngleSpacing,
+    // inpAngleAngle, inpBraceSd, inpBraceAngle) live in the separate
+    // static "Support geometry" panel in the HTML ??they must NOT be
+    // included here, or duplicate IDs end up in the DOM.
+    //
+    // The R cell carries data-cell="peakR" so refreshCheckView() can
+    // update it in place when the user changes Support ID, without
+    // ripping the rest of the table out from under any focused input.
+    const peakText = supportDemand ? `${fmtNum(supportDemand.max_force_t,3)}` : '-';
+    return `<table class="tight-table">
+      <thead>
+        <tr><th class="label">Parameter</th><th>Value</th></tr>
+      </thead>
+    <tbody>
+      <tr><td class="label">Support ID</td><td><select id="selSupportId"></select></td></tr>
+      <tr><td class="label">Peak axial force, R (tf)</td><td data-cell="peakR">${peakText}</td></tr>
+      <tr><td class="label">Fy (tf/cm^2)</td><td><input id="inpSupportFy" class="table-input" type="text" inputmode="decimal" value="${fmtNum(inputs.common.Fy_t_cm2,3)}"></td></tr>
+      <tr><td class="label">E (tf/cm^2)</td><td><input id="inpSupportE" class="table-input" type="text" inputmode="decimal" value="${fmtNum(inputs.common.E_t_cm2,1)}"></td></tr>
+      <tr><td class="label">Short-term factor</td><td><input id="inpSupportShortTerm" class="table-input" type="text" inputmode="decimal" value="${fmtNum(inputs.common.temp_increase,2)}"></td></tr>
+        <tr><td class="label">Allowable bending stress, Fb (tf/cm^2)<br><small>= 0.6 Fy * STF</small></td><td data-cell="Fb">${fmtNum(0.6 * inputs.common.Fy_t_cm2 * inputs.common.temp_increase, 3)}</td></tr>
+        <tr><td class="label">Allowable shear stress, Fv (tf/cm^2)<br><small>= 0.4 Fy * STF</small></td><td data-cell="Fv">${fmtNum(0.4 * inputs.common.Fy_t_cm2 * inputs.common.temp_increase, 3)}</td></tr>
+        <tr><td class="label">Temperature Force Ft (tf)</td><td><input id="inpSupportFt" class="table-input" type="text" inputmode="decimal" value="${fmtNum(inputs.common.Ft,3)}"></td></tr>
+        <tr><td class="label">Wale with head</td><td><select id="inpWaleWithHead"><option value="Y"${inputs.wale.withHead?' selected':''}>Yes</option><option value="N"${!inputs.wale.withHead?' selected':''}>No</option></select></td></tr>
+        <tr><td class="label">Horizontal strut live load, LL (tf/m)</td><td><input id="inpStrutLiveLoad" class="table-input" type="text" inputmode="decimal" value="${fmtNum(inputs.strut.LL,3)}"></td></tr>
+        <tr><td class="label">Extra strut moment, Mb (T-m)</td><td><input id="inpStrutMbExtra" class="table-input" type="text" inputmode="decimal" value="${fmtNum(inputs.strut.MbExtra,3)}"></td></tr>
+        <tr><td class="label">Deflection limit, Dt/L</td><td><input id="inpStrutDtLimit" class="table-input" type="text" inputmode="decimal" value="${escapeHtml(inputs.strut.DtLimitText || '')}" placeholder="Auto"></td></tr>
+        <tr><td class="label">Angle brace live load, LL (tf/m)</td><td><input id="inpAngleLiveLoad" class="table-input" type="text" inputmode="decimal" value="${fmtNum(inputs.diag.LL,3)}"></td></tr>
+        <tr><td class="label">Diagonal brace live load, LL (tf/m)</td><td><input id="inpBraceLiveLoad" class="table-input" type="text" inputmode="decimal" value="${fmtNum(inputs.brace.LL,3)}"></td></tr>
+      </tbody>
+    </table>`;
+  }
+
+</script>
+<script src="../js/Result/results_anchor_panel.js" charset="utf-8"></script>
+<script src="../js/Result/results_wall_panel.js" charset="utf-8"></script>
+<script src="../js/Result/results_support_panel.js" charset="utf-8"></script>
+<script>
+  function refreshCheckView() {
+  if(!resultData) return;
+  const inputs=getSupportInputs();
+  const wall=WallCheckModule.buildCandidate(resultData,
+    document.getElementById('selWallType').value,
+    document.getElementById('selWallSection').value,
+    getWallOptions());
+  const supportDemand=SupportCheckModule.summarizeDemandById(resultData, inputs.supportId);
+  // Build the Support Summary table once per renderFEMResults; on
+  // every other refresh, just update the dynamic Peak Force R cell in
+  // place so the user's <input> focus and caret survive editing.
+  const summaryHost = document.getElementById('supportSummary');
+  if (summaryHost) {
+    const hasFy = !!summaryHost.querySelector('#inpSupportFy');
+    if (supportSummaryNeedsRebuild || !hasFy) {
+      summaryHost.innerHTML = buildSupportSummaryHtml(supportDemand, inputs);
+      bindSupportSummaryControls(inputs.supportId);
+      supportSummaryNeedsRebuild = false;
+    } else {
+      const rCell  = summaryHost.querySelector('[data-cell="peakR"]');
+      if (rCell)  rCell.textContent  = supportDemand ? `${fmtNum(supportDemand.max_force_t,3)} T` : '-';
+      // Fb and Fv are derived from Fy and the short-term factor;
+      // re-render their cells when either one is edited.
+      const Fy = Number(inputs.common.Fy_t_cm2) || 0;
+      const ST = Number(inputs.common.temp_increase) || 0;
+      const fbCell = summaryHost.querySelector('[data-cell="Fb"]');
+      const fvCell = summaryHost.querySelector('[data-cell="Fv"]');
+      if (fbCell) fbCell.textContent = fmtNum(0.6 * Fy * ST, 3);
+      if (fvCell) fvCell.textContent = fmtNum(0.4 * Fy * ST, 3);
+    }
+  }
+  const finalSupportDemand = supportDemand;
+  const wale=SupportCheckModule.buildWaleCandidate(resultData, inputs.supportId, {
+      family: inputs.family,
+      common: inputs.common,
+      wale: inputs.wale,
+      strut: inputs.strut,
+      diag: inputs.diag,
+      brace: inputs.brace,
+    });
+  const strut=SupportCheckModule.buildStrutCandidate(resultData, inputs.supportId, {
+    family: inputs.family,
+    common: inputs.common,
+    strut: inputs.strut,
+  });
+    const angle=SupportCheckModule.buildAngleCandidate(resultData, inputs.supportId, {
+      family: inputs.family,
+      common: inputs.common,
+      wale: inputs.wale,
+      strut: inputs.strut,
+      diag: inputs.diag,
+      brace: inputs.brace,
+    });
+    const brace=SupportCheckModule.buildBraceCandidate(resultData, inputs.supportId, {
+      family: inputs.family,
+      common: inputs.common,
+      brace: inputs.brace,
+    });
+  syncAnchorVisibility();
+  const anchorInputs = getAnchorInputs();
+  const anchor = AnchorCheckModule.buildCandidate(resultData, anchorInputs.anchorId, anchorInputs);
+  
+  if(document.getElementById('wallSummary')) document.getElementById('wallSummary').innerHTML = buildWallSummaryHtml(wall);
+  if(document.getElementById('wallSectionTable')) document.getElementById('wallSectionTable').innerHTML = buildWallSectionTableHtml(wall);
+  const lagGrid = document.getElementById('laggingCheckGrid');
+  if (lagGrid) lagGrid.style.display = (wall && wall.lagging) ? '' : 'none';
+  if (document.getElementById('laggingInputTable')) {
+    document.getElementById('laggingInputTable').innerHTML = wall && wall.lagging ? buildLaggingInputHtml(wall.lagging) : '';
+  }
+  if (document.getElementById('laggingOutputTable')) {
+    document.getElementById('laggingOutputTable').innerHTML = wall && wall.lagging ? buildLaggingOutputHtml(wall.lagging) : '';
+  }
+  if (document.getElementById('laggingFormulaBox')) {
+    document.getElementById('laggingFormulaBox').innerHTML = wall && wall.lagging ? buildLaggingFormulaHtml(wall.lagging) : '';
+  }
+  // Rebar input table: rebuild ONLY when the wall type changes (or the
+  // container is empty).  Rebuilding every refresh would reset the
+  // user's bar/spacing <select>s on every keystroke elsewhere.
+  const rebarHost = document.getElementById('wallRebarDesign');
+  if (rebarHost) {
+    const wt = wall ? wall.wall_type : null;
+    const wantRebar = wt === 'diaphragm_wall' || wt === 'rc_pile_wall';
+    if (!wantRebar) {
+      if (rebarHost.innerHTML) rebarHost.innerHTML = '';
+      lastWallRebarType = null;
+    } else if (lastWallRebarType !== wt || !rebarHost.innerHTML) {
+      rebarHost.innerHTML = buildWallRebarDesignHtml(wall);
+      lastWallRebarType = wt;
+    }
+  }
+  // Wall length is auto-filled from the analysed .rio (read-only field).
+  const lenEl = document.getElementById('inpWallFullLength');
+  if (lenEl && resultData && Number(resultData.L) > 0) {
+    lenEl.value = String(+Number(resultData.L).toFixed(2));
+  }
+  // Compute + render the RC rebar design — diaphragm (flexure) or
+  // RC pile wall (P–M interaction).
+  lastDiaphragmDesign = null;
+  lastPileDesign = null;
+  const rebarResultHost = document.getElementById('wallRebarResult');
+  if (rebarResultHost) {
+    if (wall && wall.wall_type === 'diaphragm_wall' && resultData) {
+      lastDiaphragmDesign = WallCheckModule.designDiaphragmWall(resultData, getDiaphragmRebarInputs());
+      rebarResultHost.innerHTML = buildDiaphragmResultHtml(lastDiaphragmDesign);
+    } else if (wall && wall.wall_type === 'rc_pile_wall' && resultData) {
+      lastPileDesign = WallCheckModule.designPileWall(resultData, getPileRebarInputs());
+      rebarResultHost.innerHTML = buildPileResultHtml(lastPileDesign);
+      // The web rebar table only applies to secant piles — its
+      // panel persists in #wallRebarDesign (not rebuilt on pile-kind
+      // change), so toggle it here.
+      const webBox = document.getElementById('pileWebInputs');
+      const kindEl = document.getElementById('selPileKind');
+      if (webBox) webBox.style.display =
+        (kindEl && kindEl.value === 'secant') ? '' : 'none';
+    } else {
+      rebarResultHost.innerHTML = '';
+    }
+  }
+    if(document.getElementById('wallCheckTable')) document.getElementById('wallCheckTable').innerHTML = buildWallCheckTableHtml(wall);
+    if(document.getElementById('wallFormulaBox')) document.getElementById('wallFormulaBox').innerHTML = buildWallFormulaHtml(wall);
+    const wallToolbarEl = document.querySelector('#subPageWall .check-toolbar');
+    if (wallToolbarEl) {
+      wallToolbarEl.classList.remove('wall-pass', 'wall-fail', 'wall-na');
+      let wallStatus = 'N/A';
+      if (wall && wall.wall_type === 'diaphragm_wall' && lastDiaphragmDesign && lastDiaphragmDesign.ok) wallStatus = lastDiaphragmDesign.status || 'N/A';
+      else if (wall && wall.wall_type === 'rc_pile_wall' && lastPileDesign && lastPileDesign.ok) wallStatus = lastPileDesign.status || 'N/A';
+      else if (wall && wall.checks && wall.checks.status) wallStatus = wall.checks.status;
+      if (wallStatus === 'PASS') wallToolbarEl.classList.add('wall-pass');
+      else if (wallStatus === 'FAIL') wallToolbarEl.classList.add('wall-fail');
+      else wallToolbarEl.classList.add('wall-na');
+    }
+    const isRcWall = !!(wall && ['diaphragm_wall','rc_pile_wall'].includes(wall.wall_type));
+  const wallMomentPlotEl = document.getElementById('wallMomentPlot');
+  const wallShearPlotEl  = document.getElementById('wallShearPlot');
+  const wallCheckTableEl = document.getElementById('wallCheckTable');
+  const wallFormulaBoxEl = document.getElementById('wallFormulaBox');
+  const isPile = !!(wall && wall.wall_type === 'rc_pile_wall');
+  if (wallMomentPlotEl) wallMomentPlotEl.style.display = isRcWall ? '' : 'none';
+  if (wallShearPlotEl)  wallShearPlotEl.style.display  = isRcWall ? '' : 'none';
+  if (wallCheckTableEl) wallCheckTableEl.style.display = isRcWall ? 'none' : '';
+  if (wallFormulaBoxEl) wallFormulaBoxEl.style.display = isRcWall ? 'none' : '';
+  if (!isRcWall) {
+    try { if (wallMomentPlotEl) Plotly.purge(wallMomentPlotEl); } catch(e) {}
+    try { if (wallShearPlotEl) Plotly.purge(wallShearPlotEl); } catch(e) {}
+  } else {
+    requestAnimationFrame(() => {
+      if (isPile) {
+        renderPilePmPlot(wall);
+        renderPileShearPlot(wall);
+      } else {
+        renderWallMomentPlot(wall);
+        renderWallShearPlot(wall);
+      }
+    });
+  }
+  if(document.getElementById('waleCheckTable')) document.getElementById('waleCheckTable').innerHTML = buildSteelCheckTableHtml(wale,'Wale',true);
+  if(document.getElementById('waleFormulaBox')) document.getElementById('waleFormulaBox').innerHTML = buildWaleFormulaHtml(wale);
+  if(document.getElementById('strutCheckTable')) document.getElementById('strutCheckTable').innerHTML = buildSteelCheckTableHtml(strut,'Horizontal Strut',false);
+  if(document.getElementById('strutFormulaBox')) document.getElementById('strutFormulaBox').innerHTML = buildStrutFormulaHtml(strut);
+  if(document.getElementById('angleCheckTable')) document.getElementById('angleCheckTable').innerHTML = buildSteelCheckTableHtml(angle,'Angle Brace',false);
+  if(document.getElementById('angleFormulaBox')) document.getElementById('angleFormulaBox').innerHTML = buildAngleFormulaHtml(angle);
+  if(document.getElementById('braceCheckTable')) document.getElementById('braceCheckTable').innerHTML = buildSteelCheckTableHtml(brace,'Diagonal Brace',false);
+  if(document.getElementById('braceFormulaBox')) document.getElementById('braceFormulaBox').innerHTML = buildBraceFormulaHtml(brace);
+  applyCollapseStatus('wale', wale && wale.result && wale.result.status);
+  applyCollapseStatus('strut', strut && strut.result && strut.result.status);
+  applyCollapseStatus('angle', angle && angle.result && angle.result.status);
+  applyCollapseStatus('brace', brace && brace.result && brace.result.status);
+
+  if(document.getElementById('anchorSummary')) {
+    document.getElementById('anchorSummary').innerHTML = buildAnchorSummaryHtml(anchor);
+    syncAnchorSelector(anchor);
+  }
+  if(document.getElementById('anchorFsTable') && !document.getElementById('anchorFsTable').querySelector('#inpAnchorTendonFs')) {
+    document.getElementById('anchorFsTable').innerHTML = buildAnchorFsTableHtml(anchor);
+  }
+  updateAnchorStrandReadonlyCells(anchor);
+  if(document.getElementById('anchorTendonTable')) document.getElementById('anchorTendonTable').innerHTML = buildAnchorResultTableHtml('Tendon', anchor.tendon, 'P<sub>w</sub>', anchor.design_load_t);
+  if(document.getElementById('anchorTendonFormulaBox')) document.getElementById('anchorTendonFormulaBox').innerHTML = buildAnchorTendonFormulaHtml(anchor);
+  if(document.getElementById('anchorTendonGroutTable')) document.getElementById('anchorTendonGroutTable').innerHTML = buildAnchorResultTableHtml('Tendon-to-grout bond', anchor.tendonGrout, 'F<sub>w</sub>', anchor.design_load_t);
+  if(document.getElementById('anchorTendonGroutFormulaBox')) document.getElementById('anchorTendonGroutFormulaBox').innerHTML = buildAnchorTendonGroutFormulaHtml(anchor);
+  if(document.getElementById('anchorGroundTable')) document.getElementById('anchorGroundTable').innerHTML = buildAnchorResultTableHtml('Grout-to-ground bond', anchor.groutGround, 'T<sub>s</sub>', anchor.design_load_t);
+  if(document.getElementById('anchorGroundFormulaBox')) document.getElementById('anchorGroundFormulaBox').innerHTML = buildAnchorGroundFormulaHtml(anchor);
+  applyCollapseStatus('anchor-tendon', anchor && anchor.tendon && anchor.tendon.status);
+  applyCollapseStatus('anchor-tendon-grout', anchor && anchor.tendonGrout && anchor.tendonGrout.status);
+  applyCollapseStatus('anchor-ground', anchor && anchor.groutGround && anchor.groutGround.status);
+
+  currentCheckPayload = { wall, supportDemand: finalSupportDemand, wale, strut, angle, brace, anchor };
+}
+
+function syncWallSectionOptions() {
+  const wallType = document.getElementById('selWallType').value;
+  const fam = WallCheckModule.library[wallType];
+  if (!fam) return;
+  const sections = Object.keys(fam.sections || {});
+  fillSelect(document.getElementById('selWallSection'), sections);
+  // Per-family input visibility.  The section dropdown is meaningful
+  // whenever the family has at least one preset; the other inputs are
+  // gated on the matching needs* flag.
+  function show(id, on) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = on ? '' : 'none';
+  }
+  show('fieldWallSection',  sections.length > 0 && wallType !== 'diaphragm_wall');
+  show('fieldWallFullLength', wallType === 'diaphragm_wall' || wallType === 'rc_pile_wall');
+  show('fieldWallThickness', !!fam.needsThickness);
+  show('fieldWallSpacing',  !!fam.needsSpacing);
+  show('fieldLaggingEnable', wallType === 'soldier_pile');
+  show('fieldWallDiameter', !!fam.needsDiameter);
+  show('fieldWallFc',       !!fam.needsFc);
+  show('fieldPileKind',     wallType === 'rc_pile_wall');
+}
+// Push Simple Wall Builder choices into the Wall Check tab's inputs.
+// Called once per renderFEMResults; null/empty meta is a no-op so
+// external .rio runs (no `*WALLBUILDER` comment) leave the tab on its
+// previous values.  Meta shape (all fields optional):
+//   { type, section, kEI, spacing_m, diameter_cm, fc_kgf_cm2,
+//     lagging_thickness_cm, lagging_material }
+function applyWallBuilderMeta(meta) {
+  if (!meta || typeof meta !== 'object') return;
+  const typeSel  = document.getElementById('selWallType');
+  if (!typeSel)  return;
+  if (meta.type && WallCheckModule.library[meta.type]) {
+    typeSel.value = meta.type;
+    syncWallSectionOptions();                  // refresh section list + visibility
+  }
+  const secSel  = document.getElementById('selWallSection');
+  if (meta.section && secSel && Array.from(secSel.options).some(o => o.value === meta.section)) {
+    secSel.value = meta.section;
+  }
+  function setNum(id, value) {
+    if (value == null) return;
+    const v = Number(value);
+    if (!isFinite(v)) return;
+    const el = document.getElementById(id);
+    if (el) el.value = String(v);
+  }
+  setNum('inpWallSpacing',  meta.spacing_m);
+  setNum('inpWallDiameter', meta.diameter_cm);
+  setNum('inpWallFc',       meta.fc_kgf_cm2);
+  setNum('inpWallThickness', meta.thickness_cm);
+  setNum('inpWallFullLength', meta.wall_length_m ?? meta.length_m ?? (resultData && resultData.L));
+  setNum('inpWallLagThk',   meta.lagging_thickness_cm);
+  if (meta.lagging_thickness_cm != null || meta.lagging_material) {
+    const e = document.getElementById('chkLaggingEnable');
+    if (e) e.checked = true;
+  }
+}
+// Gather per-family Wall Check inputs into the `opts` object that
+// WallCheckModule.buildCandidate expects.  All fields are optional ??
+// missing values fall through harmlessly because deriveWallSection only
+// consumes them when the family asks for them.
+function getWallOptions() {
+  const num = id => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const v = parseFloat(el.value);
+    return Number.isFinite(v) ? v : null;
+  };
+  const str = id => {
+    const el = document.getElementById(id);
+    return el ? (el.value || '') : '';
+  };
+    return {
+      thickness_cm:          num('inpWallThickness'),
+      spacing_m:            num('inpWallSpacing'),
+      diameter_cm:          num('inpWallDiameter'),
+      fc_kgf_cm2:           num('inpWallFc'),
+      short_term_factor:    num('inpWallStf'),
+      enable_lagging_check: !!document.getElementById('chkLaggingEnable')?.checked,
+      lagging_Fb_kg_cm2: num('inpLagFb'),
+      lagging_Fv_kg_cm2: num('inpLagFv'),
+      lagging_water_ratio: num('inpLagWaterRatio'),
+      lagging_short_term_factor: num('inpLagStf'),
+      lagging_height_cm: num('inpLagH'),
+      lagging_thickness_cm: num('inpWallLagThk'),
+  };
+}
+
+function syncSteelSectionOptions() {
+  const names=Object.keys(SupportCheckModule.sections);
+  fillSelect(document.getElementById('selWaleSection'), names);
+  fillSelect(document.getElementById('selStrutSection'), names);
+  fillSelect(document.getElementById('selBraceSection'), names);
+  fillSelect(document.getElementById('selDiagSection'), names);
+  applySupportSectionSelectionsForSupportId(activeSupportSelectionId);
+}
+
+function exportResultsTxt() {
+  if(!resultData){alert('No results loaded.'); return;}
+  const blob=new Blob([buildResultsText(resultData)],{type:'text/plain'}), url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=(resultData.base||'fem')+'_results.txt'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function activateMainTab(name){
+  const isAnalysis = name === 'analysis';
+  const isChecks = name === 'checks';
+  const isRio = name === 'rio';
+  document.getElementById('pageAnalysis').classList.toggle('active', isAnalysis);
+  document.getElementById('pageChecks').classList.toggle('active', isChecks);
+  document.getElementById('pageRio').classList.toggle('active', isRio);
+}
+  function activateSubTab(name){
+    const isWall = name === 'wall';
+    const isAnchor = name === 'anchor';
+    const isSupport = !isWall && !isAnchor;
+    document.getElementById('subTabWall').classList.toggle('active', isWall);
+    document.getElementById('subTabSupport').classList.toggle('active', isSupport);
+    document.getElementById('subTabAnchor')?.classList.toggle('active', isAnchor);
+    document.getElementById('subPageWall').classList.toggle('active', isWall);
+    document.getElementById('subPageSupport').classList.toggle('active', isSupport);
+    document.getElementById('subPageAnchor')?.classList.toggle('active', isAnchor);
+  }
+
+  function initCollapsibles() {
+    document.querySelectorAll('.collapsible .collapse-head').forEach(head => {
+      const root = head.closest('.collapsible');
+      if(!root) return;
+      const toggle = () => {
+        const collapsed = root.classList.toggle('collapsed');
+        head.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      };
+      head.addEventListener('click', toggle);
+      head.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
+        });
+      });
+    }
+
+    function applyCollapseStatus(collapseId, status) {
+      const root = document.querySelector(`.collapsible[data-collapse-id="${collapseId}"]`);
+      if(!root) return;
+      root.classList.remove('collapse-pass', 'collapse-ok', 'collapse-fail', 'collapse-na');
+      const s = String(status || 'N/A').toUpperCase();
+      if(s === 'PASS') root.classList.add('collapse-pass');
+      else if(s === 'OK') root.classList.add('collapse-ok');
+      else if(s === 'FAIL') root.classList.add('collapse-fail');
+      else root.classList.add('collapse-na');
+    }
+  
+  function initControls() {
+      fillSelect(document.getElementById('selWallType'), Object.keys(WallCheckModule.library), v=>WallCheckModule.library[v].label);
+      syncWallSectionOptions();
+      syncSteelSectionOptions();
+      // NOTE: The support-summary input fields (inpWaleL1, inpStrutLu,
+      // ?? live inside a table that's rendered on demand by
+      // buildSupportSummaryHtml ??they DO NOT exist in the static DOM
+      // at this point.  Their initial values flow in through
+      // supportDefaults via getSupportInputs(), which provides
+      // fallback numbers when the inputs aren't there yet.  Touching
+      // .value directly here would throw on `null.value = ?圳 and kill
+      // the rest of the script (including the window.renderFEMResults
+      // assignment below ??which is why a previous attempt at this
+      // produced an empty results window after "Go FEM").
+    const controls=['selWallType','selWallSection','selPileKind',
+      // Wall-family-specific inputs (visibility toggled by syncWallSectionOptions)
+      'inpWallFullLength','inpWallThickness','inpWallSpacing','inpWallDiameter','inpWallFc','chkLaggingEnable',
+      'selWaleSection','selStrutSection','selBraceSection','selDiagSection',
+      'inpWaleL1','inpWaleWithHead','inpStrutLu','inpStrutLiveLoad','inpStrutMbExtra','inpStrutDtLimit',
+      'inpAngleAngle','inpAngleSpacing','inpAngleLiveLoad','inpBraceSd','inpBraceAngle','inpBraceLiveLoad',
+      'inpAnchorTw','inpAnchorStrandCount','selAnchorStrandDia','inpAnchorFc','inpAnchorBondLength','inpAnchorBoreDia',
+      'inpAnchorTauU'];
+    for(const id of controls){
+      const el=document.getElementById(id);
+      if(!el) continue;
+      const handler = ()=>{
+        if(id==='selWallType') syncWallSectionOptions();
+        if(id==='selStrutSection'){
+          const strutValue = el.value;
+          const angleSel = document.getElementById('selDiagSection');
+          const diagonalSel = document.getElementById('selBraceSection');
+          if(angleSel) angleSel.value = strutValue;
+          if(diagonalSel) diagonalSel.value = strutValue;
+        }
+        if(['selWaleSection','selStrutSection','selDiagSection','selBraceSection'].includes(id)) {
+          saveCurrentSupportSectionSelections(activeSupportSelectionId);
+        }
+        if(['inpAnchorTw','inpAnchorStrandCount','selAnchorStrandDia','inpAnchorFc','inpAnchorBondLength','inpAnchorBoreDia','inpAnchorTauU'].includes(id)) {
+          saveCurrentAnchorParamState(activeAnchorSelectionId);
+          if(id === 'selAnchorStrandDia') updateAnchorStrandReadonlyCells();
+        }
+        refreshCheckView();
+      };
+      el.addEventListener('change', handler);
+      if(el.tagName==='INPUT') el.addEventListener('input', handler);
+    }
+  }
+
+document.getElementById('btnExportTxt').onclick=exportResultsTxt;
+document.getElementById('btnRunRioFEM').onclick=runEditedRioFEM;
+  document.getElementById('subTabWall').onclick=()=>activateSubTab('wall');
+  document.getElementById('subTabSupport').onclick=()=>activateSubTab('support');
+  document.getElementById('subTabAnchor').onclick=()=>activateSubTab('anchor');
+  ['input','change'].forEach(evt => {
+    document.getElementById('wallSectionTable')?.addEventListener(evt, e => {
+      const t = e.target;
+      if (!t || !['inpWallStf'].includes(t.id)) return;
+      refreshCheckView();
+    });
+    document.getElementById('laggingCheckGrid')?.addEventListener(evt, e => {
+      if (evt === 'input') return;
+      const t = e.target;
+      if (!t || !['inpWallLagThk','inpLagFb','inpLagFv','inpLagWaterRatio','inpLagStf','inpLagH'].includes(t.id)) return;
+      refreshCheckView();
+    });
+    // Delegated on the persistent container so the diaphragm-wall rebar
+    // inputs trigger a recompute even as rows are added/removed.  Any
+    // value edit inside the rebar block recomputes; +Segment / ✕ are
+    // handled by the click listener below.
+    document.getElementById('wallRebarDesign')?.addEventListener(evt, e => {
+      const t = e.target;
+      if (!t) return;
+      const tag = (t.tagName || '').toLowerCase();
+      const isField = tag === 'select' || tag === 'input';
+      if (!isField) return;
+      // Changing the primary bar re-caps that row's 2nd-layer options
+      // so the added rebar can never exceed the new main bar size
+      // (a now-too-large selection drops back to none).
+      if (t.classList && t.classList.contains('dw-bar')) {
+        const row = t.closest('tr.dw-row');
+        const b2  = row && row.querySelector('.dw-bar2');
+        if (b2) b2.innerHTML = addBarOptionList(t.value, b2.value);
+      }
+      refreshCheckView();
+    });
+  });
+  document.getElementById('anchorFsTable')?.addEventListener('input', e => {
+    const t = e.target;
+    if (!t || !['inpAnchorTendonFs','inpAnchorTendonGroutFs','inpAnchorGroundFs'].includes(t.id)) return;
+    refreshCheckView();
+  });
+  document.getElementById('anchorFsTable')?.addEventListener('change', e => {
+    const t = e.target;
+    if (!t || !['inpAnchorTendonFs','inpAnchorTendonGroutFs','inpAnchorGroundFs'].includes(t.id)) return;
+    refreshCheckView();
+  });
+  // Add / remove dynamic segment rows.  Re-uses the live first row of
+  // the target tbody as the template so a new row inherits the last
+  // chosen bar/spacing (sensible default), then recomputes.
+  document.getElementById('wallRebarDesign')?.addEventListener('click', e => {
+    const autoBtn = e.target.closest && e.target.closest('#btnDwAutoDesign');
+    if (autoBtn) { runDiaphragmAutoDesign(); e.preventDefault(); return; }
+    const addBtn = e.target.closest && e.target.closest('[data-dwadd]');
+    const delBtn = e.target.closest && e.target.closest('[data-dwdel]');
+    if (addBtn) {
+      const side = addBtn.getAttribute('data-dwadd');           // Exca|Soil|Shear
+      const body = document.getElementById('dw' + side + 'Body');
+      if (body) {
+        const last = body.querySelector('tr.dw-row:last-child');
+        let html;
+        if (side === 'Shear') {
+          const bar = last ? (last.querySelector('.dw-bar')||{}).value : 'D16';
+          const v   = last ? (last.querySelector('.dw-v')||{}).value   : '15';
+          const h   = last ? (last.querySelector('.dw-h')||{}).value   : '15';
+          html = dwShearRowHtml('', bar, v, h);
+        } else {
+          const bar = last ? (last.querySelector('.dw-bar')||{}).value : 'D25';
+          const sp  = last ? (last.querySelector('.dw-sp')||{}).value  : '15';
+          html = dwFlexRowHtml('', bar, sp);
+        }
+        body.insertAdjacentHTML('beforeend', html);
+        refreshCheckView();
+      }
+      e.preventDefault();
+      return;
+    }
+    if (delBtn) {
+      const tr = delBtn.closest('tr.dw-row');
+      const body = tr && tr.parentElement;
+      // Keep at least one row per table.
+      if (body && body.querySelectorAll('tr.dw-row').length > 1) {
+        tr.remove();
+        refreshCheckView();
+      }
+      e.preventDefault();
+    }
+  });
+  
+  initCollapsibles();
+  initControls();
+
+window.renderFEMResults = function(data){
+  // Unpack an LW payload into (primary=resultData, secondary=W).  All
+  // existing single-direction code paths (checks, banners, max/strut
+  // table builders) drive off `resultData` ??making L the primary keeps
+  // them working unchanged; the LW-only overlay paths read
+  // `secondaryResultData` separately below.
+  if (data && data.lw_mode) {
+    lwMode = true;
+    secondaryResultData = data.W || null;
+    resultData = data.L || {};
+    resultData.rio_text = [
+      '* --- L direction RIO ---',
+      data.rio_text_L || '',
+      '* --- W direction RIO ---',
+      data.rio_text_W || ''
+    ].join('\n');
+    if (data.case_name) resultData.case_name = data.case_name;
+    if (data.base && !resultData.base) resultData.base = data.base;
+  } else {
+    lwMode = false;
+    secondaryResultData = null;
+    resultData = data;
+  }
+  const rioInput = document.getElementById('rioInputText');
+  if (rioInput) {
+    rioInput.value = (resultData && resultData.rio_text) || (data && data.rio_text) || '';
+  }
+  activeSupportSelectionId = '';
+  activeAnchorSelectionId = '';
+  // Force a full rebuild of the dynamic Support Summary table on the
+  // next refreshCheckView pass the support-IDs list (and therefore
+  // the <select id="selSupportId">) is derived from the new payload.
+  supportSummaryNeedsRebuild = true;
+  // Apply any Simple Wall Builder metadata to the Wall Check tab so
+  // the user's earlier choices come through pre-filled.  Both LW and
+  // single-direction payloads can carry `wall_builder_meta` at the
+  // wrapper top level (UI.py extracts it from the .rio's
+  // `*WALLBUILDER {...}` comment).
+  applyWallBuilderMeta(data && data.wall_builder_meta);
+  document.getElementById('status').textContent='';
+  const caseEl = document.getElementById('title-case');
+  const baseEl = document.getElementById('title-base');
+  const caseName = (data && data.case_name) ? String(data.case_name).trim() : '';
+  const baseName = (data && data.base) || 'results';
+  if (caseName) {
+    caseEl.textContent = caseName;
+    caseEl.style.fontWeight = 'bold';
+    baseEl.textContent = '';
+    baseEl.style.color = '';
+    document.title = 'FEM Results of ' + caseName;
+  } else {
+    caseEl.textContent = '';
+    baseEl.textContent = baseName;
+    baseEl.style.color = '';
+    document.title = 'FEM Results of ' + baseName;
+  }
+  // Banners + stage tabs + initial plot read from the primary payload
+  // (= resultData), which equals `data` in single-direction mode and
+  // data.L in LW mode.  Using `data` directly would miss `.stages`,
+  // `.envelope`, etc. in LW mode where those live one level down.
+  buildDivergenceBanner(resultData);
+  buildSanityBanner(resultData);
+  if (lwMode && secondaryResultData) {
+    // Side-by-side L / W panes.  Each pane's body is the exact HTML
+    // the single-direction view would have produced for that payload.
+    document.getElementById('maxTable').innerHTML =
+      `<div class="lw-pair">
+         <div class="lw-half"><h3>L direction <span class="lw-tag lw-L">L</span></h3>${buildMaxTable(resultData)}</div>
+         <div class="lw-half"><h3>W direction <span class="lw-tag lw-W">W</span></h3>${buildMaxTable(secondaryResultData)}</div>
+       </div>`;
+    document.getElementById('strutTable').innerHTML =
+      `<div class="lw-pair">
+         <div class="lw-half"><h3>L direction <span class="lw-tag lw-L">L</span></h3>${buildStrutTable(resultData)}</div>
+         <div class="lw-half"><h3>W direction <span class="lw-tag lw-W">W</span></h3>${buildStrutTable(secondaryResultData)}</div>
+       </div>`;
+  } else {
+    document.getElementById('maxTable').innerHTML   = buildMaxTable(resultData);
+    document.getElementById('strutTable').innerHTML = buildStrutTable(resultData);
+  }
+  buildStageTabs(resultData);
+  refreshCheckView();
+  if (resultData.has_envelope && resultData.envelope) plotEnvelope();
+  else if ((resultData.stages || []).length)         plotStage(0);
+};
+
+window.renderFEMError = function(msg){ document.getElementById('status').textContent='FEM error: '+msg; document.getElementById('status').style.color='#c33'; };
+window.getB1ReportPayload = async function(){
+    const txt = (id) => {
+      const el = document.getElementById(id);
+      return el ? (el.innerText || el.textContent || '').trim() : '';
+    };
+    const plotPng = async (id) => {
+      const el = document.getElementById(id);
+      if (!el || el.style.display === 'none' || !window.Plotly) return null;
+      const isWallMoment = id === 'wallMomentPlot';
+      const isWallShear = id === 'wallShearPlot';
+      const size = isWallShear
+        ? { width: 497, height: 337 }
+        : isWallMoment
+          ? { width: 468, height: 337 }
+          : { width: 760, height: 430 };
+      const reportLayout = (isWallMoment || isWallShear) ? {
+        'margin.l': 50,
+        'margin.r': 18,
+        'margin.t': 34,
+        'margin.b': 78,
+        'legend.y': -0.34,
+        'legend.x': 0.5,
+        'xaxis.title.standoff': 14,
+      } : null;
+      let previousLayout = null;
+      try {
+        if (reportLayout) {
+          previousLayout = {
+            'margin.l': el.layout && el.layout.margin ? el.layout.margin.l : undefined,
+            'margin.r': el.layout && el.layout.margin ? el.layout.margin.r : undefined,
+            'margin.t': el.layout && el.layout.margin ? el.layout.margin.t : undefined,
+            'margin.b': el.layout && el.layout.margin ? el.layout.margin.b : undefined,
+            'legend.y': el.layout && el.layout.legend ? el.layout.legend.y : undefined,
+            'legend.x': el.layout && el.layout.legend ? el.layout.legend.x : undefined,
+            'xaxis.title.standoff': el.layout && el.layout.xaxis && el.layout.xaxis.title ? el.layout.xaxis.title.standoff : undefined,
+          };
+          await Plotly.relayout(el, reportLayout);
+        }
+        return await Plotly.toImage(el, { format: 'png', width: size.width, height: size.height });
+      } catch (err) {
+        console.warn('Plotly.toImage failed for report payload', id, err);
+        return null;
+      } finally {
+        if (previousLayout) {
+          try {
+            const restoreLayout = {};
+            Object.keys(previousLayout).forEach(key => {
+              if (previousLayout[key] !== undefined) restoreLayout[key] = previousLayout[key];
+            });
+            if (Object.keys(restoreLayout).length) await Plotly.relayout(el, restoreLayout);
+          } catch (restoreErr) {
+            console.warn('Plotly layout restore failed for report payload', id, restoreErr);
+          }
+        }
+      }
+    };
+    const wall = currentCheckPayload && currentCheckPayload.wall;
+    const wantsWallPlots = wall && ['diaphragm_wall','rc_pile_wall'].includes(wall.wall_type);
+    return {
+      resultData,
+      checkPayload: currentCheckPayload,
+      wallDesign: {
+        diaphragm: lastDiaphragmDesign,
+        pile: lastPileDesign
+      },
+      wallPlots: wantsWallPlots ? {
+        moment: await plotPng('wallMomentPlot'),
+        shear: await plotPng('wallShearPlot')
+      } : null,
+      supportChecks: buildSupportReportItems(),
+      anchorChecks: buildAnchorReportItems(),
+      formulaText: {
+        wall: txt('wallFormulaBox'),
+        lagging: txt('laggingFormulaBox'),
+      wale: txt('waleFormulaBox'),
+      strut: txt('strutFormulaBox'),
+      angle: txt('angleFormulaBox'),
+      brace: txt('braceFormulaBox'),
+      anchor_tendon: txt('anchorTendonFormulaBox'),
+      anchor_tendon_grout: txt('anchorTendonGroutFormulaBox'),
+      anchor_ground: txt('anchorGroundFormulaBox')
+    }
+  };
+};
+if(window.__pendingFEMResults) window.renderFEMResults(window.__pendingFEMResults);
+</script>
+<script>
+  (function installResultTrialChrome() {
+    const byId = (id) => document.getElementById(id);
+    const click = (id) => {
+      const node = byId(id);
+      if (node) node.click();
+    };
+    const exportTxt = byId('trialResultsExportTxt');
+    if (exportTxt) exportTxt.addEventListener('click', () => click('btnExportTxt'));
+
+    const activate = (page, subPage) => {
+      if (page === 'checks') {
+        activateMainTab('checks');
+        if (subPage === 'wall') click('subTabWall');
+        if (subPage === 'support') click('subTabSupport');
+        if (subPage === 'anchor') click('subTabAnchor');
+      } else if (page === 'rio') {
+        activateMainTab('rio');
+      } else {
+        activateMainTab('analysis');
+      }
+      document.querySelectorAll('.b1-side-button').forEach((btn) => {
+        const active = btn.dataset.resultPage === page &&
+          (!subPage || !btn.dataset.subPage || btn.dataset.subPage === subPage);
+        btn.classList.toggle('active', active);
+      });
+    };
+
+    document.querySelectorAll('.b1-side-button').forEach((btn) => {
+      btn.addEventListener('click', () => activate(btn.dataset.resultPage, btn.dataset.subPage));
+    });
+  }());
+</script>
+</body>
+</html>
+
+
+
+
+

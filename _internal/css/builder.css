@@ -1,0 +1,196 @@
+  html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, sans-serif; }
+  body { display: flex; overflow: hidden; }
+
+  /* ---- builder panel ---- */
+  #builder {
+    width: 680px;
+    min-width: 480px;
+    max-width: 70%;
+    overflow-y: scroll;          /* always reserve scrollbar space so the
+                                    toolbar's flex-wrap doesn't reflow when
+                                    content grows after a Load .rio. */
+    padding: 12px;
+    background: #f4f5f7;
+    border-right: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+  #builder h2 { font-size: 14px; margin: 14px 0 6px; color: #333; }
+  #builder h3 { font-size: 12px; margin: 8px 0 4px; color: #555; }
+  #builder label { font-size: 11px; color: #444; margin-right: 4px; }
+  #builder input[type=number], #builder input[type=text], #builder select {
+    font-size: 11px; padding: 2px 4px; width: 60px; box-sizing: border-box;
+  }
+  #builder input.wide { width: 90px; }
+  .block {
+    background: white; border: 1px solid #bbb;
+    border-radius: 5px; padding: 6px 8px; margin: 4px 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .block .row { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+  .block.layer { background: #fff8e6; border-color: #d8b75a; }
+  .stage {
+    background: #e8f0ff; border: 2px solid #4a8;
+    border-radius: 6px; padding: 8px 10px; margin: 8px 0;
+  }
+  .stage > .stage-title {
+    font-weight: bold; font-size: 13px; color: #224; margin-bottom: 4px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .action {
+    background: white; border: 1px solid #99c;
+    border-left: 4px solid #4a8;
+    border-radius: 4px; padding: 4px 6px; margin: 3px 0;
+    cursor: grab;
+  }
+  .action.dragging { opacity: 0.4; }
+  .action.drop-before { box-shadow: 0 -3px 0 0 #4a8 inset, 0 0 0 0 transparent;
+                        border-top: 2px solid #4a8; }
+  .action.drop-after  { border-bottom: 2px solid #4a8; }
+  .stage.drop-end > .actions-bar { box-shadow: 0 -3px 0 0 #4a8; }
+  /* keep form-field areas behaving normally so dragging from inputs
+     doesn't fight the user's editing */
+  .action input, .action select, .action button { cursor: default; }
+  .action input:focus, .action select:focus { cursor: text; }
+  .action .row { gap: 3px 6px; }
+  .action.act-CAL { border-left-color: #c33; background: #fff0f0; }
+  .action.act-ENV { border-left-color: #b80; background: #fff5e0; }
+  .action.act-EXC { border-left-color: #b80; }
+  .action.act-WAT { border-left-color: #06b; }
+  .action.act-BUT { border-left-color: #c0c; }
+  .action.act-ANC { border-left-color: #c0c; }
+  .action.act-SUC { border-left-color: #777; }
+  .action.act-SUB { border-left-color: #777; }
+  .action.act-BAC { border-left-color: #960; }
+  .action.act-SOI { border-left-color: #960; }
+  .action.act-LOA { border-left-color: #088; }
+  button.tiny { font-size: 10px; padding: 1px 5px; }
+  button.add { font-size: 11px; padding: 2px 8px; margin: 2px 0; }
+  .actions-bar { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  /* The builder's "header" is one sticky block that contains the
+     button toolbar, the stage-status line, and the tab row stacked
+     vertically.  Anchoring all three to a single sticky wrapper means
+     they move as one unit, never gap, and the body action blocks slide
+     cleanly underneath them while scrolling. */
+  #builderHeader {
+    position: sticky; top: 0; z-index: 10;
+    margin: -12px -12px 6px -12px;             /* extend edge-to-edge despite #builder's padding */
+    background: #ffffff;
+    border-bottom: 1px solid #bbb;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.10);
+  }
+  .toolbar { padding: 6px 12px 6px 12px;
+             display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .toolbar button { padding: 4px 10px; font-size: 12px;
+                    background: #f4f5f7; border: 1px solid #888;
+                    border-radius: 3px; cursor: pointer; }
+  .toolbar button:hover  { background: #e6e8ec; }
+  .toolbar button:active { background: #d8dbe0; }
+  #stageStatus { font-size: 12px; color: #224;
+                 padding: 4px 12px;
+                 background: #f4f5f7;
+                 border-top: 1px solid #e2e4e8;
+                 display:flex; align-items:center; justify-content:center; gap:8px; }
+  #stageStatus .tiny { padding: 1px 8px; }
+
+  /* ---- tabs ---- */
+  .tab-pane { display: none; padding-top: 4px; }
+  .tab-pane.active { display: block; }
+  .stage-pane-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+  .seg-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid #8ea3bb;
+    border-radius: 999px;
+    overflow: hidden;
+    background: #eef3f8;
+  }
+  .seg-toggle button {
+    border: 0;
+    background: transparent;
+    color: #35506b;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 72px;
+  }
+  .seg-toggle button.active {
+    background: #6f8fb1;
+    color: #ffffff;
+  }
+  .seg-toggle button:disabled {
+    cursor: default;
+    opacity: 1;
+  }
+  .seg-toggle button:disabled:not(.active) {
+    color: #8da1b6;
+  }
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+    display: none; align-items: center; justify-content: center; z-index: 2000;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-card {
+    width: 560px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px);
+    overflow: auto; background: #fff; border: 1px solid #999; border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2); padding: 12px 14px;
+  }
+  .modal-head {
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; color: #223; }
+  .modal-close {
+    font-size: 18px; line-height: 1; border: 0; background: transparent; cursor: pointer;
+  }
+  .modal-grid {
+    display:grid; grid-template-columns: 180px 1fr; gap: 6px 8px; align-items:center;
+  }
+  .modal-grid label { font-size: 12px; color:#333; }
+  .modal-grid input[type=text], .modal-grid select {
+    width: 100%; font-size: 12px; padding: 4px 6px; box-sizing: border-box;
+  }
+  .maker-supports {
+    margin-top: 12px; border: 1px solid #ccd2d8; border-radius: 6px; overflow: hidden;
+  }
+  .maker-supports table { width: 100%; border-collapse: collapse; }
+  .maker-supports th, .maker-supports td {
+    border-bottom: 1px solid #dde3ea; padding: 6px; font-size: 12px; text-align: left;
+  }
+  .maker-supports th { background: #f4f5f7; color:#333; }
+  .maker-supports tr:last-child td { border-bottom: 0; }
+  .maker-supports input[type=text], .maker-supports select {
+    width: 100%; font-size: 12px; padding: 4px 6px; box-sizing: border-box;
+  }
+  .maker-note { font-size: 11px; color:#555; margin-top:8px; line-height:1.4; }
+  .modal-actions {
+    display:flex; justify-content:flex-end; gap:8px; margin-top: 12px;
+  }
+  .modal-actions button { font-size: 12px; padding: 5px 12px; cursor: pointer; }
+
+  /* ---- viewer panel ---- */
+  #viewer { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #viewer3D { flex: 2 0 0; position: relative; min-height: 260px; }
+  #viewer canvas { display: block; }
+  /* 3D pane = 2/3 of the column, 2D profile pane = 1/3. */
+  #profile2D {
+    flex: 1 0 0; min-height: 220px;
+    background: #fff; border-top: 1px solid #888;
+    overflow: hidden;
+  }
+  #profile2D svg { display: block; width: 100%; height: 100%; }
+  #topControls {
+    position: absolute; top: 10px; left: 10px; right: 10px; height: 36px; z-index: 999;
+    pointer-events: none;
+  }
+  #stageInfo {
+    position: absolute; left: 50%; transform: translateX(-50%); top: 4px;
+    font-size: 22px; font-weight: bold; color: #333; white-space: nowrap;
+    pointer-events: none;
+  }
+  .topButtons {
+    position: absolute; left: 0; top: 0;
+    display: flex; flex-direction: column; gap: 6px;
+    pointer-events: auto;
+  }
+  .topButtons button { font-size: 14px; padding: 6px 10px; cursor: pointer; }
