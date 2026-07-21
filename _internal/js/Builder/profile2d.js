@@ -107,7 +107,9 @@
                 st.water[side]     = [];      // reset on first WAT of stage
                 waterStageSeen[key] = true;
               }
-              st.water[side].push({ z: Number(a.Z1), u_w: Number(a.U)||0 });
+              const p = { z: Number(a.Z1), u_w: Number(a.U)||0 };
+              if (Number.isFinite(Number(a.U2))) p.u2 = Number(a.U2);
+              st.water[side].push(p);
               break;
             }
             case 'SUC':
@@ -327,17 +329,34 @@
         for (const p of state.water[side]) {
           if (Number(p.z) > Number(state.L_total) + 1e-6) continue;
           if (Math.abs(p.u_w) > uMax) uMax = Math.abs(p.u_w);
+          if (Number.isFinite(Number(p.u2)) && Math.abs(p.u2) > uMax) uMax = Math.abs(p.u2);
         }
       }
       const uScale = uMax > 0 ? 60 / uMax : 0;
+      const expandWaterPoints = raw => {
+        const sorted = [...raw].sort((a, b) => Number(a.z) - Number(b.z));
+        const pts = [];
+        const seen = new Set();
+        const pushPoint = (z, u) => {
+          if (!Number.isFinite(z) || !Number.isFinite(u)) return;
+          const key = `${z.toFixed(6)}:${u.toFixed(6)}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          pts.push({ z, u_w: u });
+        };
+        for (const p of sorted) {
+          const z = Number(p.z);
+          pushPoint(z, Number(p.u_w));
+          if (Number.isFinite(Number(p.u2))) pushPoint(z, Number(p.u2));
+        }
+        return pts;
+      };
       for (const side of [1, 2]) {
         const raw = (state.water[side] || [])
           .filter(p => Number(p.z) <= Number(state.L_total) + 1e-6);
         if (!raw || !raw.length) continue;
-        const m = new Map();
-        for (const p of raw) m.set(Number(p.z), Number(p.u_w));
-        const pts = Array.from(m.entries()).map(([z, u]) => ({z, u_w: u}))
-                        .sort((a, b) => a.z - b.z);
+        const pts = expandWaterPoints(raw);
+        if (!pts.length) continue;
         const xWall = side === 1 ? xRwall : xLwall;
         const xSign = side === 1 ? 1 : -1;
 

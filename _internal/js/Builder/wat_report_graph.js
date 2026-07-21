@@ -98,10 +98,10 @@
           current[side] = [];
           seenSide[side] = true;
         }
-        current[side].push({
-          z: finiteNumber(firstDefined(action.Z1, action.z), 0),
-          u: finiteNumber(firstDefined(action.U, action.u_w, action.u), 0),
-        });
+        const z = finiteNumber(firstDefined(action.Z1, action.z), 0);
+        const u = finiteNumber(firstDefined(action.U, action.u_w, action.u), 0);
+        current[side].push({ z, u });
+        if (Number.isFinite(Number(action.U2))) current[side].push({ z, u: Number(action.U2) });
         hasAnyWater = true;
       }
       if (hasAnyWater && (current[1].length || current[2].length)) {

@@ -148,7 +148,8 @@
           const isRemoveBut = (act.type === 'BUT' && Number(act.index) === 0);
           const typeKey = isRemoveBut ? 'BUT_REMOVE' : act.type;
           const def = ACTION_DEFS[typeKey] || ACTION_DEFS[act.type];
-          const actionLabel = typeKey === 'CFM_LINK' ? 'CFM(n)' : (isRemoveBut ? '-BUT' : act.type);
+          let actionLabel = typeKey === 'CFM_LINK' ? 'CFM(n)' : (isRemoveBut ? '-BUT' : act.type);
+          if (act.type === 'WAT' && Number.isFinite(Number(act.U2))) actionLabel = 'WAT(n,1)';
           const headerRow = el('div', { class: 'row' },
             el('span', { style: 'min-width:36px;font-weight:bold' }, actionLabel)
           );
@@ -181,8 +182,15 @@
                 currentRow.appendChild(el('label', {}, 'type'));
                 currentRow.appendChild(typeSelect);
               }
-              const inp = num(act[p.key] != null ? act[p.key] : p.default, p.step || 0.1, p.width || null);
-              inp.addEventListener('input', () => { act[p.key] = parseFloat(inp.value); });
+              const hasOptionalValue = p.optional && Number.isFinite(Number(act[p.key]));
+              const inputValue = p.optional
+                ? (hasOptionalValue ? act[p.key] : '')
+                : (act[p.key] != null ? act[p.key] : p.default);
+              const inp = num(inputValue, p.step || 0.1, p.width || null);
+              inp.addEventListener('input', () => {
+                if (p.optional && inp.value.trim() === '') delete act[p.key];
+                else act[p.key] = parseFloat(inp.value);
+              });
               inputsByKey[p.key] = inp;
               currentRow.appendChild(el('label', {}, p.label));
               currentRow.appendChild(inp);

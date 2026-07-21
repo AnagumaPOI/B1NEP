@@ -76,7 +76,13 @@
             ? `${head} ${fmt(a.Z2, 2)} ${fmt(a.A, 2)} ${fmt(a.B, 2)}`
             : head;
         }
-        case 'WAT': return `WAT(${a.side | 0}) ${fmt(a.Z1, 2)}  ${fmt(a.U, 2)}`;
+        case 'WAT': {
+          const hasU2 = Number.isFinite(Number(a.U2));
+          const head = hasU2 ? `WAT(${a.side | 0},1)` : `WAT(${a.side | 0})`;
+          return hasU2
+            ? `${head} ${fmt(a.Z1, 2)}  ${fmt(a.U, 2)}  ${fmt(a.U2, 2)}`
+            : `${head} ${fmt(a.Z1, 2)}  ${fmt(a.U, 2)}`;
+        }
         case 'SUC': return `SUC(${a.side | 0}) ${fmt(a.Q, 2)}`;
         case 'SUB': return `SUB(${a.side | 0}) ${fmt(a.Z1, 2)} ${fmt(a.A, 2)} ${fmt(a.B, 2)} ${fmt(a.Q, 2)}`;
         case 'BUT':
@@ -439,6 +445,10 @@
           a.side = parseInt(paren[0], 10) || 2;
           a.Z1 = Number(nums[0]);
           a.U = (nums.length > 1) ? Number(nums[1]) : 0;
+          if (String(paren[1] || '').trim() === '1' && nums.length > 2) {
+            const u2 = Number(nums[2]);
+            if (Number.isFinite(u2)) a.U2 = u2;
+          }
         } else if (kw === 'LOA' || kw === 'CHA') {
           a.type = 'LOA';
           a.side = parseInt(paren[0], 10) || 1;

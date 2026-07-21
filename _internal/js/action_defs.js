@@ -27,6 +27,7 @@ window.ACTION_DEFS = {
     { key: 'side', label: 'side', default: 2, step: 1 },
     { key: 'Z1',   label: 'z',    default: 2.7, step: 0.1 },
     { key: 'U',    label: 'u_w',  default: 0.0, step: 0.1 },
+    { key: 'U2',   label: "u_w'", default: '', step: 0.1, optional: true },
   ]},
   SUC: { label: 'SUC (uniform surcharge)', params: [
     { key: 'side', label: 'side', default: 1, step: 1 },
