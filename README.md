@@ -2,6 +2,14 @@
 
 本 repo 只放已打包好的 Windows 執行檔與必要檔案。
 
+## 下載方式
+
+請使用 `git clone` 下載，不建議使用 GitHub 的 `Code -> Download ZIP`，因為檔案較大時 ZIP 可能下載不完整。
+
+```bat
+git clone https://github.com/AnagumaPOI/B1NEP.git
+```
+
 請保持 `B1NEP.exe` 和 `_internal` 在同一層，不要只複製 exe。
 
 ## 使用方式
