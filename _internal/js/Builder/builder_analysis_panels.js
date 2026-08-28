@@ -74,6 +74,17 @@
           if (insertAt >= 0) stage.actions.splice(insertAt, 0, wat);
           else stage.actions.push(wat);
         }
+        // The pumping value is the pore pressure at the top of the
+        // effective-stress aquifer.  Continue that pressure hydrostatically
+        // below the interface; retaining old deeper WAT values would erase
+        // most of the effective passive stress after pumping.
+        stage.actions.forEach(action => {
+          if (action.type !== 'WAT' || Number(action.side) !== 2) return;
+          const depth = Number(action.Z1);
+          if (!Number.isFinite(depth) || depth <= z + 1e-6) return;
+          action.U = Math.round((u + depth - z) * 100) / 100;
+          action.uplift_pumping_profile = true;
+        });
         changed += 1;
       });
       if (!changed) return;

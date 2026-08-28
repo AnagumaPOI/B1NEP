@@ -1,14 +1,39 @@
-﻿# B1NEP
+# B1NEP
 
-這個 repository 只放已經用 PyInstaller 打包好的 B1NEP 執行檔與必要檔案，不包含原始 Python 程式碼。
+本 repo 只放已打包好的 Windows 執行檔與必要檔案。
+
+## 下載方式
+
+請使用 `git clone` 下載，不建議使用 GitHub 的 `Code -> Download ZIP`，因為檔案較大時 ZIP 可能下載不完整。
+
+```bat
+git clone https://github.com/AnagumaPOI/B1NEP.git
+```
+
+請保持 `B1NEP.exe` 和 `_internal` 在同一層，不要只複製 exe。
 
 ## 使用方式
 
-1. 下載整個 repository，或用 `git clone https://github.com/AnagumaPOI/B1NEP.git`。
-2. 保持 `B1NEP.exe` 和 `_internal` 資料夾在同一層，不要只單獨移動 exe。
-3. 雙擊 `B1NEP.exe` 啟動程式。
-4. 如果 Windows 出現安全性提示，確認來源可信後再選擇繼續執行。
+### 1. 開啟圖形介面
 
-## 注意
+直接雙擊 `B1NEP.exe`。
 
-目前版本為 Windows 桌面版。若要更新程式，請重新下載最新版整個資料夾。
+### 2. 命令列只跑 FEM
+
+在 `B1NEP.exe` 所在資料夾用 cmd 執行：
+
+```bat
+B1NEP.exe FEM path\case.rio [output_dir]
+```
+
+程式會執行 FEM 計算，不開啟主介面，並在輸出資料夾產生 `result.txt`。
+
+如果不希望命令列呼叫時看到 splash，可以用 PowerShell hidden 方式啟動：
+
+```powershell
+Start-Process -FilePath ".\B1NEP.exe" -ArgumentList @("FEM", "D:\case.rio", "D:\out") -Wait -WindowStyle Hidden
+```
+
+## 授權驗證
+
+程式啟動時會連到 Cloudflare 驗證本機裝置資訊。新裝置需要管理者核准後才能使用；若裝置被停用，程式會停止執行。
