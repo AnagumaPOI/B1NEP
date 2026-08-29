@@ -48,7 +48,7 @@
       if (!inject()) frame.addEventListener('load', inject, { once: true });
     }
 
-    function applyUpliftPumpingControls(cases) {
+    function applyUpliftPumpingControls(cases, balanceWaterPressure) {
       const rows = Array.isArray(cases) ? cases : [];
       if (!rows.length) return;
       syncActiveStagesRef();
@@ -60,31 +60,35 @@
         if (!Number.isFinite(stageNo) || !Number.isFinite(z) || !Number.isFinite(u)) return;
         const stage = model.stages[stageNo - 1];
         if (!stage || !Array.isArray(stage.actions)) return;
-        const existing = stage.actions.find(action => (
-          action.type === 'WAT'
-          && Number(action.side) === 2
-          && Math.abs(Number(action.Z1) - z) <= 1e-6
-        ));
-        if (existing) {
-          existing.U = u;
-          existing.uplift_pumping = true;
-        } else {
-          const wat = { type: 'WAT', side: 2, Z1: z, U: u, uplift_pumping: true };
-          const insertAt = stage.actions.findIndex(action => action.type === 'CAL' || action.type === 'ENV');
-          if (insertAt >= 0) stage.actions.splice(insertAt, 0, wat);
-          else stage.actions.push(wat);
-        }
-        // The pumping value is the pore pressure at the top of the
-        // effective-stress aquifer.  Continue that pressure hydrostatically
-        // below the interface; retaining old deeper WAT values would erase
-        // most of the effective passive stress after pumping.
-        stage.actions.forEach(action => {
-          if (action.type !== 'WAT' || Number(action.side) !== 2) return;
-          const depth = Number(action.Z1);
-          if (!Number.isFinite(depth) || depth <= z + 1e-6) return;
-          action.U = Math.round((u + depth - z) * 100) / 100;
-          action.uplift_pumping_profile = true;
-        });
+
+        const applyPumpingProfile = side => {
+          const existing = stage.actions.find(action => (
+            action.type === 'WAT'
+            && Number(action.side) === side
+            && Math.abs(Number(action.Z1) - z) <= 1e-6
+          ));
+          if (existing) {
+            existing.U = u;
+            existing.uplift_pumping = true;
+          } else {
+            const wat = { type: 'WAT', side, Z1: z, U: u, uplift_pumping: true };
+            const insertAt = stage.actions.findIndex(action => action.type === 'CAL' || action.type === 'ENV');
+            if (insertAt >= 0) stage.actions.splice(insertAt, 0, wat);
+            else stage.actions.push(wat);
+          }
+
+          // Continue the controlled interface pressure hydrostatically below it.
+          stage.actions.forEach(action => {
+            if (action.type !== 'WAT' || Number(action.side) !== side) return;
+            const depth = Number(action.Z1);
+            if (!Number.isFinite(depth) || depth <= z + 1e-6) return;
+            action.U = Math.round((u + depth - z) * 100) / 100;
+            action.uplift_pumping_profile = true;
+          });
+        };
+
+        applyPumpingProfile(2);
+        if (balanceWaterPressure) applyPumpingProfile(1);
         changed += 1;
       });
       if (!changed) return;
@@ -95,7 +99,10 @@
         showStage(currentStageIdx);
       }
       refreshAnalysisPanel();
-      alert(`Applied pumping WAT controls to ${changed} stage(s).`);
+      const mode = balanceWaterPressure
+        ? 'Balanced retained-side and excavation-side water pressures.'
+        : 'Excavation-side pressure only; this is more conservative for lateral stability.';
+      alert(`Applied pumping WAT controls to ${changed} stage(s).\n\n${mode}`);
     }
 
     window.addEventListener('message', event => {
@@ -111,7 +118,13 @@
         return;
       }
       if (data.type !== 'b1nep:apply-uplift-pumping') return;
-      applyUpliftPumpingControls(data.cases);
+      const balanceWaterPressure = window.confirm(
+        'Pumping water-pressure controls are required.\n\n'
+        + 'Balance retained-side and excavation-side water pressure at and below the pumping interface?\n\n'
+        + 'OK: Apply the same pumped water-pressure profile to both sides.\n'
+        + 'Cancel: Pump the excavation side only (more conservative for lateral stability).'
+      );
+      applyUpliftPumpingControls(data.cases, balanceWaterPressure);
     });
 
     let pyBridge = null;

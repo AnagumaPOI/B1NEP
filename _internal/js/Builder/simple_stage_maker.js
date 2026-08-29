@@ -566,7 +566,7 @@
           actions.push({ type: 'BUT', index: 0, sub_index: supports[idx].id });
         }
         if (actions.length) {
-          actions.push({ type: 'CAL', paren: '1' });
+          actions.push({ type: 'CAL', paren: '0' });
           stages.push({ actions });
         }
       });
