@@ -243,16 +243,12 @@
       const v = key => sc && sc[key] != null ? esc(String(sc[key])) : '';
       const whVal = sc && sc.wale_with_head === true  ? 'Y'
                   : sc && sc.wale_with_head === false ? 'N' : '';
-      const beamVal = sc && (sc.wale_beam_model === 'simple' || sc.wale_beam_model === 'continuous')
-        ? sc.wale_beam_model : '';
       tr.innerHTML = `
         <td colspan="10" style="background:#f5f7fa;border-top:0;">
           <div style="display:grid; grid-template-columns: 120px 160px 160px 160px 90px; gap:7px 14px; padding:8px 10px;
                       font-size:11px; color:#334; align-items:end;">
             <label>Strut L (m)<br>
               <input data-ssm-strut-l type="text" class="wide" value="${v('strut_L')}" style="width:112px;"></label>
-            <label>Strut Lb (m)<br>
-              <input data-ssm-strut-lb type="text" class="wide" value="${v('strut_Lb')}" placeholder="auto" style="width:112px;"></label>
             <label>Wale section<br>
               <select data-ssm-sec-wale style="width:154px;">${sectionOptions(sc && sc.wale_section)}</select></label>
             <label>Angle section<br>
@@ -264,12 +260,6 @@
                 <option value=""${whVal === '' ? ' selected' : ''}>(default)</option>
                 <option value="Y"${whVal === 'Y' ? ' selected' : ''}>Yes</option>
                 <option value="N"${whVal === 'N' ? ' selected' : ''}>No</option>
-              </select></label>
-            <label>Wale beam<br>
-              <select data-ssm-wale-beam style="width:120px;">
-                <option value=""${beamVal === '' ? ' selected' : ''}>(default)</option>
-                <option value="continuous"${beamVal === 'continuous' ? ' selected' : ''}>Continuous</option>
-                <option value="simple"${beamVal === 'simple' ? ' selected' : ''}>Simple</option>
               </select></label>
             <label>Angle s_a (m)<br>
               <input data-ssm-angle-sa type="text" class="wide" value="${v('angle_s_a')}" style="width:112px;"></label>
@@ -310,11 +300,8 @@
       const wh = txt('[data-ssm-with-head]');
       if (wh === 'Y') sc.wale_with_head = true;
       else if (wh === 'N') sc.wale_with_head = false;
-      const beamModel = txt('[data-ssm-wale-beam]');
-      if (beamModel === 'simple' || beamModel === 'continuous') sc.wale_beam_model = beamModel;
       const fields = [
         ['[data-ssm-strut-l]',     'strut_L'],
-        ['[data-ssm-strut-lb]',    'strut_Lb'],
         ['[data-ssm-angle-sa]',    'angle_s_a'],
         ['[data-ssm-angle-theta]', 'angle_theta'],
         ['[data-ssm-brace-sd]',    'brace_s_d'],

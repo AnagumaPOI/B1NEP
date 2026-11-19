@@ -209,9 +209,7 @@
       // Restore the original wale-style demand path used in the spreadsheet:
       // for this case the bending span is reduced by the angle-support spacing.
       const effectiveMomentSpan = Math.max(0, s - braceSpacing);
-      const beamModel = p.beamModel === 'simple' ? 'simple' : 'continuous';
-      const momentDivisor = beamModel === 'simple' ? 8.0 : 10.0;
-      const Mw = w * effectiveMomentSpan * effectiveMomentSpan / momentDivisor;
+      const Mw = w * effectiveMomentSpan * effectiveMomentSpan / 10.0;
       const Sw = shearPartnerSpan > 0 ? (w * ((s + shearPartnerSpan) / 2.0) / 2.0) : (w * s / 2.0);
 
       // ---- "Wale with head = No" ----------------------------------
@@ -253,7 +251,7 @@
             headExtension, supportReach, compressionLength,
             shearPartnerSpan, effectiveMomentSpan,
           },
-          demandForces: { w, Mw, Sw, beamModel, momentDivisor },
+          demandForces: { w, Mw, Sw },
           material,
           note: 'Wale without head: simple beam check on flexure and shear only (fb/Fb and fv/Fv).',
         };
@@ -291,7 +289,7 @@
             shearPartnerSpan,
             effectiveMomentSpan,
           },
-        demandForces: { w, Mw, Sw, beamModel, momentDivisor },
+        demandForces: { w, Mw, Sw },
         material,
         note: 'Wale uses the original beam-column style screening with flexure, shear, axial compression, and interaction checks based on horizontal support and angle-support geometry.',
       };
@@ -302,8 +300,8 @@
     const p = inputs.strut;
     const supportDemand = summarizeSupportDemandById(resultData, supportId);
     const sec = H_SECTIONS[inputs.strut.sectionName];
-    if (!sec || inputs.family !== 'h_steel' || !supportDemand || p.L <= 0 || p.Lb <= 0) {
-      return { section: sec || null, demand: supportDemand, result: null, note: 'Requires H-steel support family, a selected support member, positive L, and positive Lb.' };
+    if (!sec || inputs.family !== 'h_steel' || !supportDemand || p.L <= 0) {
+      return { section: sec || null, demand: supportDemand, result: null, note: 'Requires H-steel support family, a selected support member, and L.' };
       }
       const N = supportDemand.max_force_t;
       const w = Number(sec.w_t_m);
@@ -325,13 +323,13 @@
       material,
       N_t: N,
       M_tf_m: M,
-      L_m: p.Lb,
+      L_m: p.L,
       K: 1.0,
         Ft_t: inputs.common.Ft,
         doShear: false,
         V_t: 0.0,
       });
-    return { section: sec, demand: supportDemand, result, N, L: p.L, Lb: p.Lb, LbSource: p.LbSource, Dt, DtRatio, DtLimit, DtLimitSource, DtStatus, Ms, Mb, M, note: 'Horizontal strut check uses full length L for bending/deflection and buckling length Lb for compression stability.' };
+    return { section: sec, demand: supportDemand, result, N, Dt, DtRatio, DtLimit, DtLimitSource, DtStatus, Ms, Mb, M, note: 'Horizontal strut check uses beam-column interaction and a serviceability deflection estimate.' };
   }
 
   function buildAngleCandidate(resultData, supportId, inputs) {
@@ -370,8 +368,7 @@
     }
     const Ww = supportDemand.max_force_t / p.sh;
     const theta = Number(p.angleDeg || 0);
-    const sinTheta = Math.sin(theta * Math.PI / 180.0);
-    const N = (Math.abs(sinTheta) > 1e-9) ? Ww * p.sd / 2.0 / sinTheta : 0;
+    const N = (degCos(theta) !== 0) ? Ww * p.sd / 2.0 / degCos(theta) : 0;
     const L = (degCos(theta) !== 0) ? p.sd / degCos(theta) : 0;
     const source = 'corner';
     const M = (Number(sec.w_t_m) + p.LL) * L * L / 8.0;

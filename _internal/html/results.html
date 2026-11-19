@@ -139,82 +139,18 @@
     .tight-table td input.table-input,
     .tight-table td select.table-input { width: 100%; }
     .compact-table-wrap { width: fit-content; max-width: 100%; }
+    /* Support pane layout: the right column stacks "Support section"
+       on top and "Support geometry" on the bottom.  Use flex with
+       space-between so the top panel hugs the column's top edge and
+       the bottom panel hugs the bottom aligning them with the left
+       "Support Summary" panel's top and bottom respectively. */
     #subPageSupport .check-grid { align-items: stretch; }
-    #subPageSupport .support-config-grid {
-      display: grid;
-      grid-template-rows: auto auto;
+    #subPageSupport .check-grid > .check-stack {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       gap: 10px;
-      align-items: start;
-      margin-top: 0;
-    }
-    #subPageSupport .support-bottom-grid {
-      display: grid;
-      grid-template-columns: minmax(255px, 0.62fr) minmax(420px, 1.38fr);
-      gap: 10px;
-      align-items: stretch;
-    }
-    #subPageSupport .compact-support-panel {
-      padding: 8px 10px;
-    }
-    #subPageSupport .compact-support-panel h3 {
-      margin-bottom: 6px;
-    }
-    #subPageSupport .compact-support-panel .tight-table {
-      margin: 2px 0;
-      font-size: 11px;
-    }
-    #subPageSupport .compact-support-panel .tight-table th,
-    #subPageSupport .compact-support-panel .tight-table td {
-      padding: 2px 5px;
-    }
-    #subPageSupport .compact-support-panel .table-input {
-      padding: 2px 5px;
-      min-height: 20px;
-    }
-    #subPageSupport .support-section-panel .tight-table td:first-child {
-      width: 36%;
-    }
-    #subPageSupport .support-geometry-panel .tight-table td:first-child {
-      width: 58%;
-    }
-    #subPageSupport .support-geometry-panel .tight-table td:last-child {
-      width: 118px;
-    }
-    #subPageSupport .support-geometry-panel .table-input {
-      max-width: 112px;
-    }
-    #subPageSupport .support-dims-panel {
-      padding: 8px 10px;
-      overflow: visible;
-      position: relative;
-    }
-    #subPageSupport .support-dims-panel img {
-      display: block;
-      width: 100%;
-      height: 258px;
-      object-fit: contain;
-      background: #fff;
-      border: 1px solid #d7dde4;
-      position: relative;
-      z-index: 1;
-      transition: transform 0.16s ease, box-shadow 0.16s ease;
-      transform-origin: center center;
-    }
-    #subPageSupport .support-dims-panel img:hover {
-      transform: scale(1.35);
-      box-shadow: 0 12px 30px rgba(20, 30, 45, 0.24);
-      z-index: 8;
-    }
-    @media (max-width: 1180px) {
-      #subPageSupport .support-bottom-grid {
-        grid-template-columns: 1fr;
-      }
-      #subPageSupport .support-dims-panel img {
-        height: 220px;
-      }
-      #subPageSupport .support-dims-panel img:hover {
-        transform: scale(1.12);
-      }
+      height: 100%;
     }
     /* Strut/anchor force table: don't span the full viewport, and bold
        the Peak |N| column (last column) so the row max stands out. */
@@ -407,59 +343,51 @@
             <h3>Support Summary</h3>
             <div id="supportSummary"></div>
         </div>
-        <div class="support-config-grid">
-            <div class="panel compact-support-panel support-section-panel">
-              <h3>Support section</h3>
-              <table class="tight-table">
-                <thead>
-                  <tr><th class="label">Item</th><th>Value</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td class="label">Wale Section</td>
-                      <td><select id="selWaleSection" class="table-input"></select></td></tr>
-                  <tr><td class="label">Horizontal Strut Section</td>
-                      <td><select id="selStrutSection" class="table-input"></select></td></tr>
-                  <tr><td class="label">Angle Brace Section</td>
-                      <td><select id="selDiagSection" class="table-input"></select></td></tr>
-                  <tr><td class="label">Diagonal Brace Section</td>
-                      <td><select id="selBraceSection" class="table-input"></select></td></tr>
-                </tbody>
-              </table>
-            </div>
-          <div class="support-bottom-grid">
-            <!-- Static "Support geometry" inputs.  These live OUTSIDE the
-                 dynamically-rebuilt #supportSummary table so that editing
-                 them doesn't tear the input element out from under the
-                 user's keystroke.  Initial values match supportDefaults
-                 in the inline script. -->
-            <div class="panel compact-support-panel support-geometry-panel">
-              <h3>Support geometry</h3>
-              <table class="tight-table">
-                <thead>
-                  <tr><th class="label">Item</th><th>Value</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td class="label">Horizontal strut spacing, s_h (m)</td>
-                      <td><input id="inpWaleL1"       class="table-input" type="text" inputmode="decimal" value="6.300"></td></tr>
-                  <tr><td class="label">Horizontal strut length, L (m)</td>
-                      <td><input id="inpStrutLu"      class="table-input" type="text" inputmode="decimal" value="2.700"></td></tr>
-                  <tr><td class="label">Buckling length, Lb (m)</td>
-                      <td><input id="inpStrutLb"      class="table-input" type="text" inputmode="decimal" value="" placeholder="max: L"></td></tr>
-                  <tr><td class="label">Angle brace spacing, s_a (m)</td>
-                      <td><input id="inpAngleSpacing" class="table-input" type="text" inputmode="decimal" value="1.500"></td></tr>
-                  <tr><td class="label">Angle brace angle, theta(deg)</td>
-                      <td><input id="inpAngleAngle"   class="table-input" type="text" inputmode="decimal" value="45.000"></td></tr>
-                  <tr><td class="label">Distance to wall, s_d (m)</td>
-                      <td><input id="inpBraceSd"      class="table-input" type="text" inputmode="decimal" value="3.200"></td></tr>
-                  <tr><td class="label">Diagonal brace angle, theta(deg)</td>
-                      <td><input id="inpBraceAngle"   class="table-input" type="text" inputmode="decimal" value="45.000"></td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="panel compact-support-panel support-dims-panel">
-              <h3>Geometry reference</h3>
-              <img src="../img/SupportSystemDims.png" alt="Support system dimensions reference">
-            </div>
+        <div class="check-stack" style="margin-top:0;">
+          <div class="panel">
+            <h3>Support section</h3>
+            <table class="tight-table">
+              <thead>
+                <tr><th class="label">Item</th><th>Value</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="label">Wale Section</td>
+                    <td><select id="selWaleSection" class="table-input"></select></td></tr>
+                <tr><td class="label">Horizontal Strut Section</td>
+                    <td><select id="selStrutSection" class="table-input"></select></td></tr>
+                <tr><td class="label">Angle Brace Section</td>
+                    <td><select id="selDiagSection" class="table-input"></select></td></tr>
+                <tr><td class="label">Diagonal Brace Section</td>
+                    <td><select id="selBraceSection" class="table-input"></select></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Static "Support geometry" inputs.  These live OUTSIDE the
+               dynamically-rebuilt #supportSummary table so that editing
+               them doesn't tear the input element out from under the
+               user's keystroke.  Initial values match supportDefaults
+               in the inline script. -->
+          <div class="panel">
+            <h3>Support geometry</h3>
+            <table class="tight-table">
+              <thead>
+                <tr><th class="label">Item</th><th>Value</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="label">Horizontal strut spacing, s_h (m)</td>
+                    <td><input id="inpWaleL1"       class="table-input" type="text" inputmode="decimal" value="6.300"></td></tr>
+                <tr><td class="label">Horizontal strut length, L (m)</td>
+                    <td><input id="inpStrutLu"      class="table-input" type="text" inputmode="decimal" value="2.700"></td></tr>
+                <tr><td class="label">Angle brace spacing, s_a (m)</td>
+                    <td><input id="inpAngleSpacing" class="table-input" type="text" inputmode="decimal" value="1.500"></td></tr>
+                <tr><td class="label">Angle brace angle, theta (deg)</td>
+                    <td><input id="inpAngleAngle"   class="table-input" type="text" inputmode="decimal" value="45.000"></td></tr>
+                <tr><td class="label">Distance to wall, s_d (m)</td>
+                    <td><input id="inpBraceSd"      class="table-input" type="text" inputmode="decimal" value="3.200"></td></tr>
+                <tr><td class="label">Diagonal brace angle, theta (deg)</td>
+                    <td><input id="inpBraceAngle"   class="table-input" type="text" inputmode="decimal" value="45.000"></td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -706,9 +634,7 @@ let supportCommonState = {
 const supportDefaults = {
     wale_L1:        6.3,
     wale_with_head: 'Y',
-    wale_beam_model:'continuous',
     strut_L:        2.7,
-    strut_Lb:       '',
     strut_LL:       0.5,
   strut_MbExtra:  0,
   strut_DtLimit:  '',
@@ -808,9 +734,7 @@ function saveCurrentSupportSectionSelections(explicitId) {
     diagonal: diagonal.value,
     waleL1:        grab('inpWaleL1'),
     waleWithHead:  grab('inpWaleWithHead'),
-    waleBeamModel: grab('inpWaleBeamModel'),
     strutLu:       grab('inpStrutLu'),
-    strutLb:       grab('inpStrutLb'),
     angleSpacing:  grab('inpAngleSpacing'),
     angleAngle:    grab('inpAngleAngle'),
     braceSd:       grab('inpBraceSd'),
@@ -933,10 +857,7 @@ function applySupportSectionSelectionsForSupportId(explicitId) {
     }
     restore('inpWaleL1',       saved.waleL1);
     restore('inpWaleWithHead', saved.waleWithHead);
-    restore('inpWaleBeamModel',saved.waleBeamModel);
     restore('inpStrutLu',      saved.strutLu);
-    const savedLb = document.getElementById('inpStrutLb');
-    if (savedLb) savedLb.value = saved.strutLb == null ? '' : saved.strutLb;
     restore('inpAngleSpacing', saved.angleSpacing);
     restore('inpAngleAngle',   saved.angleAngle);
     restore('inpBraceSd',      saved.braceSd);
@@ -954,8 +875,6 @@ function applySupportSectionSelectionsForSupportId(explicitId) {
     //      peak |force| for this sid ??so the wale check sees the
     //      conservative span.
     const sectionKey = resolveStrutTypeToSection(femStrutTypeForId(key));
-    const freshLb = document.getElementById('inpStrutLb');
-    if (freshLb) freshLb.value = '';
     if (sectionKey) {
       wale.value     = sectionKey;
       strut.value    = sectionKey;
@@ -989,7 +908,6 @@ function applySupportSectionSelectionsForSupportId(explicitId) {
         if (el) el.value = String(n);
       }
       applyNum(sc.strut_L,     'inpStrutLu');
-      applyNum(sc.strut_Lb,    'inpStrutLb');
       applyNum(sc.angle_s_a,   'inpAngleSpacing');
       applyNum(sc.angle_theta, 'inpAngleAngle');
       applyNum(sc.brace_s_d,   'inpBraceSd');
@@ -997,10 +915,6 @@ function applySupportSectionSelectionsForSupportId(explicitId) {
       if (sc.wale_with_head === true || sc.wale_with_head === false) {
         const wh = document.getElementById('inpWaleWithHead');
         if (wh) wh.value = sc.wale_with_head ? 'Y' : 'N';
-      }
-      if (sc.wale_beam_model === 'simple' || sc.wale_beam_model === 'continuous') {
-        const bm = document.getElementById('inpWaleBeamModel');
-        if (bm) bm.value = sc.wale_beam_model;
       }
     }
     // Snapshot the auto-filled values so re-visiting this sid restores
@@ -1307,25 +1221,17 @@ function runEditedRioFEM() {
     // sensible numbers instead of zeros when the inputs don't exist
     // yet (which is the case on the very first refreshCheckView call).
     const dflt = supportDefaults;
-    const strutL = Number(v('inpStrutLu') || dflt.strut_L);
-    const braceSd = Number(v('inpBraceSd') || dflt.brace_sd);
-    const lbText = String(v('inpStrutLb') || '').trim();
-    const manualLb = lbText !== '' && Number.isFinite(Number(lbText)) && Number(lbText) > 0;
-    const hasDiagonalBrace = Number.isFinite(braceSd) && braceSd > 0;
-    const autoLb = hasDiagonalBrace ? (strutL - 2.0 * braceSd) : strutL;
-    const strutLb = manualLb ? Number(lbText) : autoLb;
-    const strutLbSource = manualLb ? 'user input' : (hasDiagonalBrace ? 'auto = L - 2sd' : 'auto = L');
     return {
         family:'h_steel',
         common,
         supportId:supportIdValue || fallbackSupportId,
-        wale:{ sectionName:v('selWaleSection'), L1:Number(v('inpWaleL1')||dflt.wale_L1), withHead:(v('inpWaleWithHead')||dflt.wale_with_head)==='Y', beamModel:v('inpWaleBeamModel')||dflt.wale_beam_model },
-    strut:{ sectionName:v('selStrutSection'), L:strutL, Lb:strutLb, LbSource:strutLbSource, LL:Number(v('inpStrutLiveLoad')||dflt.strut_LL), MbExtra:Number(v('inpStrutMbExtra')||dflt.strut_MbExtra), DtLimitText:v('inpStrutDtLimit') || dflt.strut_DtLimit },
+        wale:{ sectionName:v('selWaleSection'), L1:Number(v('inpWaleL1')||dflt.wale_L1), withHead:(v('inpWaleWithHead')||dflt.wale_with_head)==='Y' },
+    strut:{ sectionName:v('selStrutSection'), L:Number(v('inpStrutLu')||dflt.strut_L), LL:Number(v('inpStrutLiveLoad')||dflt.strut_LL), MbExtra:Number(v('inpStrutMbExtra')||dflt.strut_MbExtra), DtLimitText:v('inpStrutDtLimit') || dflt.strut_DtLimit },
       diag:{ sectionName:v('selDiagSection'), angleDeg:Number(v('inpAngleAngle')||dflt.angle_angle), spacing:Number(v('inpAngleSpacing')||dflt.angle_spacing), LL:Number(v('inpAngleLiveLoad')||dflt.angle_LL) },
         brace:{
         sectionName:v('selBraceSection'),
         sh:Number(v('inpWaleL1')||dflt.wale_L1),
-        sd:braceSd,
+        sd:Number(v('inpBraceSd')||dflt.brace_sd),
         angleDeg:Number(v('inpBraceAngle')||dflt.brace_angle),
         LL:Number(v('inpBraceLiveLoad')||dflt.brace_LL)
       }
@@ -1370,7 +1276,6 @@ function buildSupportSummaryHtml(supportDemand, inputs) {
         <tr><td class="label">Allowable shear stress, Fv (tf/cm^2)<br><small>= 0.4 Fy * STF</small></td><td data-cell="Fv">${fmtNum(0.4 * inputs.common.Fy_t_cm2 * inputs.common.temp_increase, 3)}</td></tr>
         <tr><td class="label">Temperature Force Ft (tf)</td><td><input id="inpSupportFt" class="table-input" type="text" inputmode="decimal" value="${fmtNum(inputs.common.Ft,3)}"></td></tr>
         <tr><td class="label">Wale with head</td><td><select id="inpWaleWithHead"><option value="Y"${inputs.wale.withHead?' selected':''}>Yes</option><option value="N"${!inputs.wale.withHead?' selected':''}>No</option></select></td></tr>
-        <tr><td class="label">Wale beam model</td><td><select id="inpWaleBeamModel"><option value="continuous"${inputs.wale.beamModel!=='simple'?' selected':''}>Continuous beam (M = wL²/10)</option><option value="simple"${inputs.wale.beamModel==='simple'?' selected':''}>Simple beam (M = wL²/8)</option></select></td></tr>
         <tr><td class="label">Horizontal strut live load, LL (tf/m)</td><td><input id="inpStrutLiveLoad" class="table-input" type="text" inputmode="decimal" value="${fmtNum(inputs.strut.LL,3)}"></td></tr>
         <tr><td class="label">Extra strut moment, Mb (T-m)</td><td><input id="inpStrutMbExtra" class="table-input" type="text" inputmode="decimal" value="${fmtNum(inputs.strut.MbExtra,3)}"></td></tr>
         <tr><td class="label">Deflection limit, Dt/L</td><td><input id="inpStrutDtLimit" class="table-input" type="text" inputmode="decimal" value="${escapeHtml(inputs.strut.DtLimitText || '')}" placeholder="Auto"></td></tr>
@@ -1745,7 +1650,7 @@ function activateMainTab(name){
       // Wall-family-specific inputs (visibility toggled by syncWallSectionOptions)
       'inpWallFullLength','inpWallThickness','inpWallSpacing','inpWallDiameter','inpWallFc','chkLaggingEnable',
       'selWaleSection','selStrutSection','selBraceSection','selDiagSection',
-      'inpWaleL1','inpWaleWithHead','inpWaleBeamModel','inpStrutLu','inpStrutLb','inpStrutLiveLoad','inpStrutMbExtra','inpStrutDtLimit',
+      'inpWaleL1','inpWaleWithHead','inpStrutLu','inpStrutLiveLoad','inpStrutMbExtra','inpStrutDtLimit',
       'inpAngleAngle','inpAngleSpacing','inpAngleLiveLoad','inpBraceSd','inpBraceAngle','inpBraceLiveLoad',
       'inpAnchorTw','inpAnchorStrandCount','selAnchorStrandDia','inpAnchorFc','inpAnchorBondLength','inpAnchorBoreDia',
       'inpAnchorTauU'];
